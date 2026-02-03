@@ -1,0 +1,301 @@
+{
+  "PROMO_2022_HOLIDAY": {
+    "promo_id": "PROMO_2022_HOLIDAY",
+    "campaign_name": "Holiday 2022 Acquisition Campaign",
+    "start_date": "2022-11-06",
+    "end_date": "2022-12-31",
+    "discount_pct": 30,
+    "discount_type": "percentage",
+    "duration_weeks": 8,
+    "duration_months": 2,
+    "eligible_tiers": [
+      "ad_supported",
+      "ad_free"
+    ],
+    "eligible_cohorts": [
+      "promo_only_users",
+      "deal_responsive_acquirers",
+      "new_subscribers"
+    ],
+    "eligible_channels": [
+      "paid_search",
+      "paid_social",
+      "display",
+      "email"
+    ],
+    "exclusions": [
+      "existing_subscribers"
+    ],
+    "roll_off_date": "2023-11-01",
+    "roll_off_type": "hard",
+    "roll_off_window_weeks": 4,
+    "promo_code": "HOLIDAY30",
+    "attribution_window_days": 7,
+    "target_adds": 15000,
+    "actual_adds": 14237,
+    "target_roi": 1.5,
+    "actual_roi": 1.68,
+    "marketing_spend_usd": 125000,
+    "incremental_revenue_usd": 210000,
+    "churn_spike_expected": true,
+    "churn_spike_lag_weeks": 8,
+    "notes": "Holiday season acquisition campaign targeting price-sensitive users. Expected 12-month roll-off churn in Nov 2023. Performance exceeded target with 95% attainment and 112% ROI vs target.",
+    "campaign_tags": [
+      "acquisition",
+      "seasonal",
+      "price-sensitive",
+      "high-churn-risk"
+    ],
+    "success_criteria": {
+      "adds_min": 12000,
+      "churn_rate_max": 0.55,
+      "payback_months_max": 8,
+      "ltv_cac_ratio_min": 2.0
+    },
+    "actual_performance": {
+      "adds_achieved": 14237,
+      "churn_rate_at_12mo": 0.51,
+      "payback_months": 6.8,
+      "ltv_cac_ratio": 2.3
+    }
+  },
+  "PROMO_2023_HOLIDAY": {
+    "promo_id": "PROMO_2023_HOLIDAY",
+    "campaign_name": "Holiday 2023 Acquisition Campaign",
+    "start_date": "2023-11-05",
+    "end_date": "2023-12-31",
+    "discount_pct": 30,
+    "discount_type": "percentage",
+    "duration_weeks": 8,
+    "duration_months": 2,
+    "eligible_tiers": [
+      "ad_supported",
+      "ad_free"
+    ],
+    "eligible_cohorts": [
+      "promo_only_users",
+      "deal_responsive_acquirers",
+      "new_subscribers",
+      "at_risk_lapsers"
+    ],
+    "eligible_channels": [
+      "paid_search",
+      "paid_social",
+      "display",
+      "email",
+      "partnerships"
+    ],
+    "exclusions": [
+      "existing_subscribers_tenure_gt_6mo"
+    ],
+    "roll_off_date": "2024-11-01",
+    "roll_off_type": "hard",
+    "roll_off_window_weeks": 4,
+    "promo_code": "HOLIDAY23",
+    "attribution_window_days": 7,
+    "target_adds": 18000,
+    "actual_adds": 17891,
+    "target_roi": 1.6,
+    "actual_roi": 1.72,
+    "marketing_spend_usd": 145000,
+    "incremental_revenue_usd": 249470,
+    "churn_spike_expected": true,
+    "churn_spike_lag_weeks": 8,
+    "notes": "Holiday 2023 campaign built on learnings from 2022. Expanded to include lapsers and partnerships. Higher base price ($5.99 vs $4.99) improved unit economics. 12-month roll-off expected Nov 2024.",
+    "campaign_tags": [
+      "acquisition",
+      "seasonal",
+      "winback",
+      "improved-economics"
+    ],
+    "success_criteria": {
+      "adds_min": 15000,
+      "churn_rate_max": 0.5,
+      "payback_months_max": 7,
+      "ltv_cac_ratio_min": 2.2
+    },
+    "actual_performance": {
+      "adds_achieved": 17891,
+      "churn_rate_at_8mo": 0.38,
+      "payback_months": 6.2,
+      "ltv_cac_ratio": 2.6
+    }
+  },
+  "PROMO_2023_Q2_RETENTION": {
+    "promo_id": "PROMO_2023_Q2_RETENTION",
+    "campaign_name": "Q2 2023 Retention - Price Increase Mitigation",
+    "start_date": "2023-05-15",
+    "end_date": "2023-07-31",
+    "discount_pct": 20,
+    "discount_type": "percentage",
+    "duration_weeks": 11,
+    "duration_months": 2.5,
+    "eligible_tiers": [
+      "ad_supported",
+      "ad_free"
+    ],
+    "eligible_cohorts": [
+      "price_triggered_downgraders",
+      "at_risk_lapsers",
+      "price_sensitive_churn_risks"
+    ],
+    "eligible_channels": [
+      "email",
+      "in_app",
+      "customer_service"
+    ],
+    "exclusions": [
+      "new_subscribers"
+    ],
+    "roll_off_date": "2024-05-15",
+    "roll_off_type": "soft",
+    "roll_off_window_weeks": 8,
+    "promo_code": "SAVE20",
+    "attribution_window_days": 14,
+    "target_saves": 5000,
+    "actual_saves": 4823,
+    "target_roi": 3.5,
+    "actual_roi": 3.8,
+    "marketing_spend_usd": 35000,
+    "incremental_revenue_usd": 133000,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Targeted retention campaign deployed alongside June 2023 price increase to mitigate churn among price-sensitive cohorts. Offered to at-risk users 2 weeks before price change. Soft roll-off with step-up pricing.",
+    "campaign_tags": [
+      "retention",
+      "winback",
+      "price-mitigation",
+      "targeted"
+    ],
+    "success_criteria": {
+      "saves_min": 4000,
+      "incremental_ltv_min": 120000,
+      "cost_per_save_max": 8.0,
+      "churn_rate_reduction_pp": 2.0
+    },
+    "actual_performance": {
+      "saves_achieved": 4823,
+      "incremental_ltv": 187000,
+      "cost_per_save": 7.26,
+      "churn_rate_reduction_pp": 2.8
+    }
+  },
+  "PROMO_2024_Q1_WINBACK": {
+    "promo_id": "PROMO_2024_Q1_WINBACK",
+    "campaign_name": "Q1 2024 Winback - Holiday Churners",
+    "start_date": "2024-01-15",
+    "end_date": "2024-02-29",
+    "discount_pct": 25,
+    "discount_type": "percentage",
+    "duration_weeks": 6,
+    "duration_months": 1.5,
+    "eligible_tiers": [
+      "ad_supported",
+      "ad_free"
+    ],
+    "eligible_cohorts": [
+      "dormant_subscribers",
+      "at_risk_lapsers"
+    ],
+    "eligible_channels": [
+      "email",
+      "paid_social",
+      "display"
+    ],
+    "exclusions": [
+      "active_subscribers",
+      "churned_lt_30_days"
+    ],
+    "roll_off_date": "2025-01-15",
+    "roll_off_type": "soft",
+    "roll_off_window_weeks": 12,
+    "promo_code": "COMEBACK25",
+    "attribution_window_days": 30,
+    "target_adds": 3000,
+    "actual_adds": 2847,
+    "target_roi": 2.0,
+    "actual_roi": 2.3,
+    "marketing_spend_usd": 42000,
+    "incremental_revenue_usd": 96610,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Winback campaign targeting users who churned post-holiday 2023. Focused on dormant users with high historical engagement. Soft roll-off with 3-month step pricing to reduce secondary churn.",
+    "campaign_tags": [
+      "winback",
+      "reactivation",
+      "churned-users",
+      "seasonal-recovery"
+    ],
+    "success_criteria": {
+      "reactivations_min": 2500,
+      "second_churn_rate_max": 0.35,
+      "payback_months_max": 9,
+      "engagement_score_min": 0.6
+    },
+    "actual_performance": {
+      "reactivations_achieved": 2847,
+      "second_churn_rate_at_6mo": 0.31,
+      "payback_months": 7.9,
+      "avg_engagement_score": 0.68
+    }
+  },
+  "PROMO_2024_BUNDLE_LAUNCH": {
+    "promo_id": "PROMO_2024_BUNDLE_LAUNCH",
+    "campaign_name": "Bundle Tier Launch - Early Adopter Discount",
+    "start_date": "2024-09-01",
+    "end_date": "2024-10-31",
+    "discount_pct": 15,
+    "discount_type": "percentage",
+    "duration_weeks": 9,
+    "duration_months": 2,
+    "eligible_tiers": [
+      "bundle"
+    ],
+    "eligible_cohorts": [
+      "ad_free_loyalists",
+      "habitual_streamers",
+      "content_anchored_viewers"
+    ],
+    "eligible_channels": [
+      "email",
+      "in_app",
+      "partnerships"
+    ],
+    "exclusions": [
+      "ad_supported",
+      "new_subscribers"
+    ],
+    "roll_off_date": "2025-09-01",
+    "roll_off_type": "soft",
+    "roll_off_window_weeks": 12,
+    "promo_code": "BUNDLESAVE15",
+    "attribution_window_days": 14,
+    "target_adds": 8000,
+    "actual_adds": null,
+    "target_roi": 2.5,
+    "actual_roi": null,
+    "marketing_spend_usd": 95000,
+    "incremental_revenue_usd": null,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Early adopter campaign for new $14.99 bundle tier launch. Targeting high-value ad_free users to migrate up. 15% discount brings effective price to $12.74, making it attractive vs standalone ad_free at $9.99. Campaign in progress.",
+    "campaign_tags": [
+      "upsell",
+      "bundle-launch",
+      "premium-migration",
+      "in-progress"
+    ],
+    "success_criteria": {
+      "upgrades_min": 6500,
+      "downgrade_rate_max": 0.05,
+      "arpu_lift_pct_min": 25,
+      "engagement_score_min": 0.75
+    },
+    "actual_performance": {
+      "upgrades_achieved": null,
+      "downgrade_rate": null,
+      "arpu_lift_pct": null,
+      "avg_engagement_score": null
+    }
+  }
+}

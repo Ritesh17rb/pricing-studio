@@ -1,0 +1,413 @@
+{
+  "metadata": {
+    "created_date": "2026-01-20",
+    "data_version": "v3.0",
+    "total_weeks": 471,
+    "start_date": "2022-01-02",
+    "end_date": "2024-12-31",
+    "purpose": "Define clean validation windows for elasticity model training and testing"
+  },
+  "data_range": {
+    "start": "2022-01-02",
+    "end": "2024-12-31",
+    "weeks": 471,
+    "years": 3,
+    "price_change_events": 3,
+    "promo_campaigns": 5,
+    "tentpole_events": 18
+  },
+  "primary_train_window": {
+    "window_id": "TRAIN_2022_BASELINE",
+    "start": "2022-01-02",
+    "end": "2022-10-31",
+    "weeks": 43,
+    "months": 10,
+    "status": "clean",
+    "characteristics": [
+      "No price changes",
+      "Stable pricing period",
+      "Pre-holiday baseline",
+      "Clean elasticity signal"
+    ],
+    "events_excluded": [],
+    "recommended_for": [
+      "Baseline elasticity estimation",
+      "Churn model training",
+      "Acquisition model training"
+    ],
+    "notes": "Ideal training period with stable pricing and no confounding events. Ad-Lite at $4.99, ad-free at $6.99 throughout period."
+  },
+  "primary_test_window": {
+    "window_id": "TEST_2023_POST_PRICE_CHANGE",
+    "start": "2023-06-11",
+    "end": "2023-10-31",
+    "weeks": 21,
+    "months": 5,
+    "status": "test",
+    "characteristics": [
+      "Post price-increase validation",
+      "Clean response measurement",
+      "Pre-holiday baseline"
+    ],
+    "price_change_date": "2023-06-04",
+    "lag_weeks_from_event": 1,
+    "recommended_for": [
+      "Price elasticity validation",
+      "Churn response measurement",
+      "Acquisition impact testing"
+    ],
+    "notes": "Test period following June 2023 price increases. Measures clean elasticity response without confounding promos. Ad-Lite $4.99\u2192$5.99, ad-free $6.99\u2192$7.99."
+  },
+  "validation_windows": [
+    {
+      "window_id": "TRAIN_2022_Q1_Q2",
+      "type": "train",
+      "start": "2022-01-02",
+      "end": "2022-06-30",
+      "weeks": 26,
+      "status": "clean",
+      "purpose": "Early baseline - stable pricing",
+      "notes": "First half 2022. No events except content releases. Ideal for baseline demand curves."
+    },
+    {
+      "window_id": "TRAIN_2022_Q3",
+      "type": "train",
+      "start": "2022-07-01",
+      "end": "2022-10-31",
+      "weeks": 17,
+      "status": "clean",
+      "purpose": "Pre-holiday training window",
+      "notes": "Q3 2022. Summer/fall stable period. Good for seasonal controls."
+    },
+    {
+      "window_id": "TEST_2022_Q4_PROMO",
+      "type": "test",
+      "start": "2022-11-06",
+      "end": "2022-12-31",
+      "weeks": 8,
+      "status": "confounded",
+      "purpose": "Promo acquisition response",
+      "confounding_factors": [
+        "30% holiday promo",
+        "Seasonal demand spike",
+        "Tentpole content releases",
+        "Black Friday effect"
+      ],
+      "notes": "Holiday 2022 promo period. Confounded but useful for promo response modeling. Cannot isolate price elasticity."
+    },
+    {
+      "window_id": "TEST_2023_Q1_ROLLOFF",
+      "type": "test",
+      "start": "2023-01-01",
+      "end": "2023-03-31",
+      "weeks": 13,
+      "status": "test",
+      "purpose": "Promo roll-off churn measurement",
+      "promo_end_date": "2023-01-01",
+      "lag_windows": [
+        "0-4 weeks: immediate churn response",
+        "4-8 weeks: delayed churn peak",
+        "8-12 weeks: stabilization"
+      ],
+      "notes": "Post-holiday promo end. Measures immediate churn response when price returns to $4.99 full price. Clean measurement of promo-acquired cohort behavior."
+    },
+    {
+      "window_id": "TRAIN_2023_Q2_PRE_CHANGE",
+      "type": "train",
+      "start": "2023-04-01",
+      "end": "2023-06-03",
+      "weeks": 9,
+      "status": "clean",
+      "purpose": "Pre-price change baseline",
+      "notes": "Clean period immediately before June 2023 price increases. Establishes new baseline post-promo period."
+    },
+    {
+      "window_id": "TEST_2023_PRICE_CHANGE",
+      "type": "test",
+      "start": "2023-06-04",
+      "end": "2023-10-31",
+      "weeks": 21,
+      "status": "test",
+      "purpose": "Price elasticity validation - 20% increase",
+      "price_changes": [
+        {
+          "tier": "ad_supported",
+          "old_price": 4.99,
+          "new_price": 5.99,
+          "change_pct": 20.04
+        },
+        {
+          "tier": "ad_free",
+          "old_price": 6.99,
+          "new_price": 7.99,
+          "change_pct": 14.31
+        }
+      ],
+      "lag_windows": [
+        "0-4 weeks: immediate acquisition/churn response",
+        "4-8 weeks: delayed churn",
+        "8-12 weeks: migration effects",
+        "12+ weeks: stabilization"
+      ],
+      "notes": "Primary test window for price elasticity. Clean response measurement for both acquisition drop and churn increase. No confounding promos."
+    },
+    {
+      "window_id": "TEST_2023_Q4_PROMO",
+      "type": "test",
+      "start": "2023-11-05",
+      "end": "2023-12-31",
+      "weeks": 8,
+      "status": "confounded",
+      "purpose": "Promo response - higher base price",
+      "confounding_factors": [
+        "30% promo on higher base ($5.99 vs $4.99 in 2022)",
+        "Seasonal effects",
+        "12-month roll-off cohort from 2022 promo"
+      ],
+      "notes": "Holiday 2023 promo + roll-off overlap. Confounded but useful for comparing promo effectiveness at different price points."
+    },
+    {
+      "window_id": "TEST_2024_Q1_ROLLOFF",
+      "type": "test",
+      "start": "2024-01-01",
+      "end": "2024-03-02",
+      "weeks": 9,
+      "status": "test",
+      "purpose": "Promo roll-off validation - 2023 cohort",
+      "notes": "Second promo roll-off measurement. Validates consistency of roll-off churn patterns vs 2023 Q1 cohort."
+    },
+    {
+      "window_id": "TEST_2024_Q1_PRICE_CHANGE_2",
+      "type": "test",
+      "start": "2024-03-03",
+      "end": "2024-06-30",
+      "weeks": 17,
+      "status": "test",
+      "purpose": "Sequential price increase - ad_free tier",
+      "price_changes": [
+        {
+          "tier": "ad_free",
+          "old_price": 8.99,
+          "new_price": 9.99,
+          "change_pct": 11.12
+        }
+      ],
+      "notes": "Second price increase for ad_free tier only. Tests elasticity of premium tier and tier-gap effects (ad_free now 67% more expensive than ad_supported)."
+    },
+    {
+      "window_id": "TRAIN_2024_Q3_Q4",
+      "type": "train",
+      "start": "2024-07-01",
+      "end": "2024-10-31",
+      "weeks": 18,
+      "status": "clean",
+      "purpose": "Post-price change stable period",
+      "notes": "New baseline after all price increases. Ad_supported=$5.99, ad_free=$9.99. Clean period for updated elasticity estimation."
+    },
+    {
+      "window_id": "TEST_2024_Q4_ROLLOFF_2",
+      "type": "test",
+      "start": "2024-11-01",
+      "end": "2024-12-31",
+      "weeks": 9,
+      "status": "test",
+      "purpose": "12-month roll-off - 2023 promo cohort",
+      "notes": "Third roll-off measurement. Tests consistency of 12-month roll-off churn hypothesis."
+    }
+  ],
+  "confounded_periods": [
+    {
+      "period_id": "CONF_2022_HOLIDAY",
+      "start": "2022-11-06",
+      "end": "2023-01-15",
+      "weeks": 10,
+      "reason": "Holiday promo + seasonality + tentpole content",
+      "confounding_factors": [
+        "30% promotional discount",
+        "Black Friday / Cyber Monday effect",
+        "Holiday content releases",
+        "End-of-year seasonality",
+        "Promo roll-off beginning"
+      ],
+      "recommendation": "Exclude from price elasticity training. Use only for promo response modeling."
+    },
+    {
+      "period_id": "CONF_2023_HOLIDAY",
+      "start": "2023-11-05",
+      "end": "2024-01-15",
+      "weeks": 10,
+      "reason": "Holiday promo + 12-month roll-off overlap",
+      "confounding_factors": [
+        "30% promotional discount on higher base price",
+        "12-month roll-off from 2022 promo cohort",
+        "Holiday seasonality",
+        "New subscriber acquisition vs roll-off churn overlap"
+      ],
+      "recommendation": "Exclude from clean elasticity estimation. Useful for roll-off timing validation."
+    }
+  ],
+  "clean_periods": [
+    {
+      "period_id": "CLEAN_2022_BASELINE",
+      "start": "2022-01-02",
+      "end": "2022-10-31",
+      "weeks": 43,
+      "characteristics": "Stable pricing, no promos, consistent baseline demand",
+      "use_cases": [
+        "Baseline elasticity estimation",
+        "Demand curve calibration",
+        "Churn model training",
+        "Acquisition model training"
+      ]
+    },
+    {
+      "period_id": "CLEAN_2023_PRE_CHANGE",
+      "start": "2023-04-01",
+      "end": "2023-06-03",
+      "weeks": 9,
+      "characteristics": "Post-promo stabilization, pre-price change baseline",
+      "use_cases": [
+        "Updated baseline after promo period",
+        "Pre-price change benchmark"
+      ]
+    },
+    {
+      "period_id": "CLEAN_2023_POST_CHANGE",
+      "start": "2023-06-11",
+      "end": "2023-10-31",
+      "weeks": 21,
+      "characteristics": "Post-price increase, no promos, clean elasticity signal",
+      "use_cases": [
+        "Price elasticity validation",
+        "Churn response measurement",
+        "Acquisition impact testing"
+      ]
+    },
+    {
+      "period_id": "CLEAN_2024_POST_CHANGE_2",
+      "start": "2024-07-01",
+      "end": "2024-10-31",
+      "weeks": 18,
+      "characteristics": "New baseline after all price increases, stable period",
+      "use_cases": [
+        "Updated elasticity estimation",
+        "Long-term churn stabilization",
+        "Tier-gap effects measurement"
+      ]
+    }
+  ],
+  "backtesting_scenarios": [
+    {
+      "scenario_id": "BACKTEST_2023_PRICE_INCREASE",
+      "event_date": "2023-06-04",
+      "train_window": "2022-01-02 to 2023-06-03",
+      "test_window": "2023-06-04 to 2023-10-31",
+      "forecast_horizon": "21 weeks",
+      "kpis": [
+        "Acquisition drop %",
+        "Churn rate increase pp",
+        "Revenue impact $",
+        "ARPU change $"
+      ],
+      "success_criteria": "Predicted vs Actual within \u00b110% MAPE",
+      "notes": "Primary backtest for price elasticity model validation. Clean event with clear before/after periods."
+    },
+    {
+      "scenario_id": "BACKTEST_2024_ADFREE_INCREASE",
+      "event_date": "2024-03-03",
+      "train_window": "2022-01-02 to 2024-03-02",
+      "test_window": "2024-03-03 to 2024-06-30",
+      "forecast_horizon": "17 weeks",
+      "kpis": [
+        "Ad-free tier churn rate change",
+        "Tier migration (downgrade to ad_supported)",
+        "ARPU impact",
+        "Ad-free share %"
+      ],
+      "success_criteria": "Tier migration predicted within \u00b15pp",
+      "notes": "Validates tier-gap elasticity and migration models. Ad-free now 50% more expensive than ad_supported."
+    },
+    {
+      "scenario_id": "BACKTEST_2023_PROMO_ROLLOFF",
+      "event_date": "2023-01-01",
+      "train_window": "2022-01-02 to 2022-12-31",
+      "test_window": "2023-01-01 to 2023-03-31",
+      "forecast_horizon": "13 weeks",
+      "kpis": [
+        "Churn rate by lag window (0-4, 4-8, 8-12 weeks)",
+        "Cohort-specific churn uplift",
+        "Net adds impact"
+      ],
+      "success_criteria": "Churn payback period predicted within \u00b12 weeks",
+      "notes": "Validates time-lagged churn model and promo roll-off hypothesis. Promo cohort identifiable."
+    }
+  ],
+  "recommended_usage": {
+    "acquisition_model": {
+      "train": [
+        "CLEAN_2022_BASELINE",
+        "CLEAN_2023_PRE_CHANGE"
+      ],
+      "test": [
+        "TEST_2023_PRICE_CHANGE",
+        "TEST_2024_Q1_PRICE_CHANGE_2"
+      ],
+      "exclude": [
+        "CONF_2022_HOLIDAY",
+        "CONF_2023_HOLIDAY"
+      ]
+    },
+    "churn_model": {
+      "train": [
+        "CLEAN_2022_BASELINE",
+        "TRAIN_2023_Q2_PRE_CHANGE"
+      ],
+      "test": [
+        "TEST_2023_PRICE_CHANGE",
+        "TEST_2023_Q1_ROLLOFF",
+        "TEST_2024_Q1_ROLLOFF"
+      ],
+      "include_confounded": [
+        "TEST_2022_Q4_PROMO"
+      ],
+      "notes": "Include confounded promo periods for roll-off training"
+    },
+    "migration_model": {
+      "train": [
+        "CLEAN_2022_BASELINE",
+        "TEST_2023_PRICE_CHANGE"
+      ],
+      "test": [
+        "TEST_2024_Q1_PRICE_CHANGE_2"
+      ],
+      "notes": "Focus on periods with tier-gap changes"
+    }
+  },
+  "model_versions": {
+    "v1.0": {
+      "trained_on": "CLEAN_2022_BASELINE",
+      "validated_on": "TEST_2023_PRICE_CHANGE",
+      "performance": "MAPE: 12.3%",
+      "notes": "Initial model"
+    },
+    "v2.0": {
+      "trained_on": [
+        "CLEAN_2022_BASELINE",
+        "CLEAN_2023_PRE_CHANGE"
+      ],
+      "validated_on": "TEST_2024_Q1_PRICE_CHANGE_2",
+      "performance": "MAPE: 9.7%",
+      "notes": "Improved with promo-adjusted data"
+    },
+    "v3.0_current": {
+      "trained_on": [
+        "CLEAN_2022_BASELINE",
+        "CLEAN_2023_PRE_CHANGE",
+        "CLEAN_2024_POST_CHANGE_2"
+      ],
+      "validated_on": "All test windows",
+      "performance": "MAPE: 8.2%",
+      "notes": "Current production model with full history"
+    }
+  }
+}

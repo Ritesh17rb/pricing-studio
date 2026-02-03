@@ -1,0 +1,1015 @@
+{
+  "project": {
+    "name": "Streaming Service Price Elasticity & Revenue Optimization Demo",
+    "client": "Demo Client",
+    "market": "United States",
+    "phase": " - POC",
+    "data_period": "2022-01-01 to 2024-12-31",
+    "generated_date": "2026-01-13",
+    "version": "1.0",
+    "description": "Synthetic data for price elasticity modeling and scenario simulation"
+  },
+  "datasets": {
+    "subscribers": {
+      "filename": "subscribers.csv",
+      "description": "Individual subscriber-level data with acquisition, behavior, engagement, and churn information",
+      "record_count": 50000,
+      "date_range": {
+        "start": "2022-01-01",
+        "end": "2024-12-30"
+      },
+      "granularity": "subscriber_level",
+      "primary_key": "subscriber_id",
+      "update_frequency": "daily_snapshot",
+      "size_mb": 6.4,
+      "columns": {
+        "subscriber_id": {
+          "type": "string",
+          "description": "Unique anonymized subscriber identifier",
+          "format": "SUB_######",
+          "example": "SUB_000000",
+          "nullable": false,
+          "constraints": "unique, not null"
+        },
+        "acquisition_date": {
+          "type": "date",
+          "description": "Date when subscriber first signed up",
+          "format": "YYYY-MM-DD",
+          "example": "2022-06-09",
+          "nullable": false,
+          "constraints": "not null, >= 2022-01-01"
+        },
+        "tier": {
+          "type": "categorical",
+          "description": "Subscription tier/product type",
+          "format": "string",
+          "example": "ad_free",
+          "nullable": false,
+          "allowed_values": [
+            "ad_supported",
+            "ad_free"
+          ],
+          "constraints": "not null, must be one of allowed values"
+        },
+        "acquisition_channel": {
+          "type": "categorical",
+          "description": "Marketing channel through which subscriber was acquired",
+          "format": "string",
+          "example": "paid_search",
+          "nullable": false,
+          "allowed_values": [
+            "organic",
+            "paid_search",
+            "paid_social",
+            "partner",
+            "referral"
+          ],
+          "constraints": "not null, must be one of allowed values"
+        },
+        "device_type": {
+          "type": "categorical",
+          "description": "Primary device type used for viewing",
+          "format": "string",
+          "example": "mobile",
+          "nullable": false,
+          "allowed_values": [
+            "mobile",
+            "web",
+            "smart_tv",
+            "roku",
+            "firetv"
+          ],
+          "constraints": "not null, must be one of allowed values",
+          "note": "Mobile includes both iOS and Android; consider splitting in future"
+        },
+        "age_group": {
+          "type": "categorical",
+          "description": "Age demographic segment",
+          "format": "string",
+          "example": "25-34",
+          "nullable": false,
+          "allowed_values": [
+            "18-24",
+            "25-34",
+            "35-44",
+            "45-54",
+            "55+"
+          ],
+          "constraints": "not null, must be one of allowed values"
+        },
+        "tenure_days": {
+          "type": "integer",
+          "description": "Number of days since acquisition (as of data snapshot date)",
+          "format": "integer",
+          "example": 936,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "days"
+        },
+        "tenure_months": {
+          "type": "float",
+          "description": "Number of months since acquisition (tenure_days / 30)",
+          "format": "float",
+          "example": 31.2,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "months",
+          "calculation": "tenure_days / 30"
+        },
+        "engagement_score": {
+          "type": "float",
+          "description": "Composite engagement score based on viewing behavior (0-1 scale)",
+          "format": "float",
+          "example": 0.77,
+          "nullable": false,
+          "constraints": "not null, 0 <= value <= 1",
+          "unit": "score",
+          "interpretation": "Higher score = more engaged subscriber"
+        },
+        "active_days_30d": {
+          "type": "integer",
+          "description": "Number of days subscriber was active in last 30 days",
+          "format": "integer",
+          "example": 17,
+          "nullable": false,
+          "constraints": "not null, 0 <= value <= 30",
+          "unit": "days",
+          "window": "rolling_30_days"
+        },
+        "watch_time_30d": {
+          "type": "float",
+          "description": "Total watch time in minutes over last 30 days",
+          "format": "float",
+          "example": 351.6,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "minutes",
+          "window": "rolling_30_days"
+        },
+        "unique_content_30d": {
+          "type": "integer",
+          "description": "Number of unique content pieces watched in last 30 days",
+          "format": "integer",
+          "example": 19,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count",
+          "window": "rolling_30_days"
+        },
+        "churned": {
+          "type": "boolean",
+          "description": "Has subscriber cancelled/churned?",
+          "format": "boolean",
+          "example": false,
+          "nullable": false,
+          "allowed_values": [
+            true,
+            false
+          ],
+          "constraints": "not null"
+        },
+        "churn_date": {
+          "type": "date",
+          "description": "Date of cancellation (null if still active)",
+          "format": "YYYY-MM-DD",
+          "example": "2023-08-15",
+          "nullable": true,
+          "constraints": "null if churned=False, not null if churned=True"
+        },
+        "current_price": {
+          "type": "float",
+          "description": "Current subscription price (monthly)",
+          "format": "float",
+          "example": 9.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD",
+          "note": "Reflects effective price after promotions"
+        },
+        "is_active": {
+          "type": "boolean",
+          "description": "Is subscriber currently active (not churned)?",
+          "format": "boolean",
+          "example": true,
+          "nullable": false,
+          "allowed_values": [
+            true,
+            false
+          ],
+          "constraints": "not null, inverse of churned"
+        }
+      }
+    },
+    "weekly_aggregated": {
+      "filename": "weekly_aggregated.csv",
+      "description": "Pre-aggregated weekly KPIs by tier with integrated external factors for time series modeling",
+      "record_count": 471,
+      "calculation": "157 weeks \u00d7 3 tiers",
+      "date_range": {
+        "start": "2022-01-02",
+        "end": "2024-12-29"
+      },
+      "granularity": "weekly_by_tier",
+      "primary_key": [
+        "date",
+        "tier"
+      ],
+      "update_frequency": "weekly",
+      "size_kb": 136,
+      "columns": {
+        "date": {
+          "type": "date",
+          "description": "Week start date (Sunday)",
+          "format": "YYYY-MM-DD",
+          "example": "2022-01-02",
+          "nullable": false,
+          "constraints": "not null, unique per tier"
+        },
+        "tier": {
+          "type": "categorical",
+          "description": "Subscription tier",
+          "format": "string",
+          "example": "ad_supported",
+          "nullable": false,
+          "allowed_values": [
+            "ad_supported",
+            "ad_free"
+          ]
+        },
+        "new_subscribers": {
+          "type": "integer",
+          "description": "Number of new sign-ups during week",
+          "format": "integer",
+          "example": 85,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "active_subscribers": {
+          "type": "integer",
+          "description": "Total active subscribers at end of week",
+          "format": "integer",
+          "example": 121,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "churned_subscribers": {
+          "type": "integer",
+          "description": "Number of cancellations during week",
+          "format": "integer",
+          "example": 5,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "churn_rate": {
+          "type": "float",
+          "description": "Churn rate for week (churned / active)",
+          "format": "float",
+          "example": 0.042,
+          "nullable": false,
+          "constraints": "not null, >= 0, <= 1",
+          "unit": "rate",
+          "calculation": "churned_subscribers / active_subscribers"
+        },
+        "net_adds": {
+          "type": "integer",
+          "description": "Net subscriber change (new - churned)",
+          "format": "integer",
+          "example": 85,
+          "nullable": false,
+          "constraints": "not null",
+          "unit": "count",
+          "calculation": "new_subscribers - churned_subscribers"
+        },
+        "revenue": {
+          "type": "float",
+          "description": "Total revenue for week",
+          "format": "float",
+          "example": 2616.42,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD",
+          "calculation": "active_subscribers \u00d7 price"
+        },
+        "arpu": {
+          "type": "float",
+          "description": "Average Revenue Per User",
+          "format": "float",
+          "example": 4.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD",
+          "calculation": "revenue / active_subscribers"
+        },
+        "price": {
+          "type": "float",
+          "description": "Effective price (after promotions)",
+          "format": "float",
+          "example": 4.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "base_price": {
+          "type": "float",
+          "description": "Base price before discounts",
+          "format": "float",
+          "example": 4.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "is_promo": {
+          "type": "boolean",
+          "description": "Is promotional pricing active?",
+          "format": "boolean",
+          "example": false,
+          "nullable": false,
+          "allowed_values": [
+            true,
+            false
+          ]
+        },
+        "promo_discount_pct": {
+          "type": "float",
+          "description": "Discount percentage if promo active",
+          "format": "float",
+          "example": 0.0,
+          "nullable": false,
+          "constraints": "not null, >= 0, <= 100",
+          "unit": "percent"
+        },
+        "avg_engagement_score": {
+          "type": "float",
+          "description": "Average engagement score across subscribers",
+          "format": "float",
+          "example": 0.4,
+          "nullable": false,
+          "constraints": "not null, 0 <= value <= 1",
+          "unit": "score"
+        },
+        "avg_watch_time_30d": {
+          "type": "float",
+          "description": "Average watch time across subscribers (last 30d)",
+          "format": "float",
+          "example": 155.46,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "minutes"
+        },
+        "total_marketing_spend": {
+          "type": "float",
+          "description": "Total marketing spend for week (all channels)",
+          "format": "float",
+          "example": 577355.91,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "paid_social": {
+          "type": "float",
+          "description": "Paid social marketing spend",
+          "format": "float",
+          "example": 202074.57,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "paid_search": {
+          "type": "float",
+          "description": "Paid search marketing spend",
+          "format": "float",
+          "example": 144338.98,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "major_content_releases": {
+          "type": "integer",
+          "description": "Number of major content releases",
+          "format": "integer",
+          "example": 2,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "net_content_score": {
+          "type": "integer",
+          "description": "Net content score (releases - removals)",
+          "format": "integer",
+          "example": 9,
+          "nullable": false,
+          "constraints": "not null",
+          "unit": "score"
+        },
+        "unemployment_rate": {
+          "type": "float",
+          "description": "US unemployment rate",
+          "format": "float",
+          "example": 3.8,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "percent"
+        },
+        "cpi": {
+          "type": "float",
+          "description": "Consumer Price Index",
+          "format": "float",
+          "example": 289.98,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "index"
+        },
+        "consumer_sentiment": {
+          "type": "float",
+          "description": "Consumer sentiment index",
+          "format": "float",
+          "example": 106.3,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "index"
+        },
+        "competitor_avg_price": {
+          "type": "float",
+          "description": "Average competitor price (Netflix, Hulu, Disney+)",
+          "format": "float",
+          "example": 10.49,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "netflix_price": {
+          "type": "float",
+          "description": "Netflix standard tier price",
+          "format": "float",
+          "example": 15.49,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "netflix_major_release": {
+          "type": "boolean",
+          "description": "Netflix major content release flag",
+          "format": "boolean",
+          "example": false,
+          "nullable": false,
+          "allowed_values": [
+            true,
+            false
+          ]
+        },
+        "price_lag1": {
+          "type": "float",
+          "description": "Price from 1 week prior (lagged feature)",
+          "format": "float",
+          "example": 4.99,
+          "nullable": true,
+          "constraints": "nullable for first week",
+          "unit": "USD"
+        },
+        "price_lag4": {
+          "type": "float",
+          "description": "Price from 4 weeks prior (lagged feature)",
+          "format": "float",
+          "example": 4.99,
+          "nullable": true,
+          "constraints": "nullable for first 4 weeks",
+          "unit": "USD"
+        },
+        "new_subs_lag1": {
+          "type": "float",
+          "description": "New subscribers from 1 week prior (lagged feature)",
+          "format": "float",
+          "example": 85.0,
+          "nullable": true,
+          "constraints": "nullable for first week",
+          "unit": "count"
+        },
+        "time_index": {
+          "type": "integer",
+          "description": "Week number starting from 0",
+          "format": "integer",
+          "example": 0,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "index"
+        },
+        "month": {
+          "type": "integer",
+          "description": "Month (1-12)",
+          "format": "integer",
+          "example": 1,
+          "nullable": false,
+          "constraints": "not null, 1 <= value <= 12",
+          "unit": "month"
+        },
+        "quarter": {
+          "type": "integer",
+          "description": "Quarter (1-4)",
+          "format": "integer",
+          "example": 1,
+          "nullable": false,
+          "constraints": "not null, 1 <= value <= 4",
+          "unit": "quarter"
+        },
+        "is_holiday_season": {
+          "type": "boolean",
+          "description": "Holiday season indicator (Nov-Dec)",
+          "format": "boolean",
+          "example": false,
+          "nullable": false,
+          "allowed_values": [
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "pricing_history": {
+      "filename": "pricing_history.csv",
+      "description": "Historical pricing changes, promotional periods, and effective prices by tier",
+      "record_count": 471,
+      "calculation": "157 weeks \u00d7 3 tiers",
+      "date_range": {
+        "start": "2022-01-02",
+        "end": "2024-12-29"
+      },
+      "granularity": "weekly_by_tier",
+      "primary_key": [
+        "date",
+        "tier"
+      ],
+      "update_frequency": "weekly",
+      "size_kb": 24,
+      "columns": {
+        "date": {
+          "type": "date",
+          "description": "Week start date",
+          "format": "YYYY-MM-DD",
+          "example": "2022-01-02",
+          "nullable": false
+        },
+        "tier": {
+          "type": "categorical",
+          "description": "Subscription tier",
+          "format": "string",
+          "example": "ad_supported",
+          "nullable": false,
+          "allowed_values": [
+            "ad_supported",
+            "ad_free"
+          ]
+        },
+        "base_price": {
+          "type": "float",
+          "description": "Base price before discounts",
+          "format": "float",
+          "example": 4.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "is_promo": {
+          "type": "boolean",
+          "description": "Is promotional pricing active?",
+          "format": "boolean",
+          "example": false,
+          "nullable": false
+        },
+        "promo_discount_pct": {
+          "type": "float",
+          "description": "Discount percentage (0-100)",
+          "format": "float",
+          "example": 0.0,
+          "nullable": false,
+          "constraints": "not null, >= 0, <= 100",
+          "unit": "percent"
+        },
+        "effective_price": {
+          "type": "float",
+          "description": "Actual price paid (base - discount)",
+          "format": "float",
+          "example": 4.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD",
+          "calculation": "base_price \u00d7 (1 - promo_discount_pct / 100)"
+        },
+        "price_changed": {
+          "type": "boolean",
+          "description": "Did price change this week?",
+          "format": "boolean",
+          "example": false,
+          "nullable": false
+        },
+        "price_change_pct": {
+          "type": "float",
+          "description": "% change from previous price",
+          "format": "float",
+          "example": 0.0,
+          "nullable": false,
+          "constraints": "not null",
+          "unit": "percent",
+          "calculation": "(current_price - previous_price) / previous_price \u00d7 100"
+        }
+      }
+    },
+    "external_factors": {
+      "filename": "external_factors.csv",
+      "description": "Macroeconomic indicators and competitor pricing data",
+      "record_count": 157,
+      "date_range": {
+        "start": "2022-01-02",
+        "end": "2024-12-29"
+      },
+      "granularity": "weekly",
+      "primary_key": "date",
+      "update_frequency": "weekly",
+      "size_kb": 15,
+      "columns": {
+        "date": {
+          "type": "date",
+          "description": "Week start date",
+          "format": "YYYY-MM-DD",
+          "example": "2022-01-02",
+          "nullable": false
+        },
+        "unemployment_rate": {
+          "type": "float",
+          "description": "US unemployment rate",
+          "format": "float",
+          "example": 3.8,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "percent",
+          "source": "Synthetic based on historical trends"
+        },
+        "cpi": {
+          "type": "float",
+          "description": "Consumer Price Index (inflation indicator)",
+          "format": "float",
+          "example": 289.98,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "index",
+          "source": "Synthetic based on historical trends"
+        },
+        "consumer_sentiment": {
+          "type": "float",
+          "description": "Consumer sentiment index",
+          "format": "float",
+          "example": 106.3,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "index",
+          "source": "Synthetic based on University of Michigan index"
+        },
+        "netflix_price": {
+          "type": "float",
+          "description": "Netflix standard tier price",
+          "format": "float",
+          "example": 15.49,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "hulu_price": {
+          "type": "float",
+          "description": "Hulu Ad-Lite tier price",
+          "format": "float",
+          "example": 7.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "disney_price": {
+          "type": "float",
+          "description": "Disney+ Ad-Lite tier price",
+          "format": "float",
+          "example": 7.99,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD"
+        },
+        "competitor_avg_price": {
+          "type": "float",
+          "description": "Average competitor price",
+          "format": "float",
+          "example": 10.49,
+          "nullable": false,
+          "constraints": "not null, > 0",
+          "unit": "USD",
+          "calculation": "(netflix_price + hulu_price + disney_price) / 3"
+        },
+        "netflix_major_release": {
+          "type": "boolean",
+          "description": "Netflix major content release event",
+          "format": "boolean",
+          "example": false,
+          "nullable": false
+        }
+      }
+    },
+    "marketing_spend": {
+      "filename": "marketing_spend.csv",
+      "description": "Marketing spend by channel for acquisition analysis",
+      "record_count": 157,
+      "date_range": {
+        "start": "2022-01-02",
+        "end": "2024-12-29"
+      },
+      "granularity": "weekly",
+      "primary_key": "date",
+      "update_frequency": "weekly",
+      "size_kb": 19,
+      "columns": {
+        "date": {
+          "type": "date",
+          "description": "Week start date",
+          "format": "YYYY-MM-DD",
+          "example": "2022-01-02",
+          "nullable": false
+        },
+        "total_marketing_spend": {
+          "type": "float",
+          "description": "Total marketing spend for week",
+          "format": "float",
+          "example": 577355.91,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "paid_social": {
+          "type": "float",
+          "description": "Paid social marketing spend (Facebook, Instagram, etc.)",
+          "format": "float",
+          "example": 202074.57,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "paid_search": {
+          "type": "float",
+          "description": "Paid search marketing spend (Google, Bing, etc.)",
+          "format": "float",
+          "example": 144338.98,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "display": {
+          "type": "float",
+          "description": "Display advertising spend",
+          "format": "float",
+          "example": 115471.18,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "tv": {
+          "type": "float",
+          "description": "TV advertising spend",
+          "format": "float",
+          "example": 86603.39,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        },
+        "other": {
+          "type": "float",
+          "description": "Other marketing channels",
+          "format": "float",
+          "example": 28867.8,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "USD"
+        }
+      }
+    },
+    "content_releases": {
+      "filename": "content_releases.csv",
+      "description": "Content release calendar for content-driven demand modeling",
+      "record_count": 157,
+      "date_range": {
+        "start": "2022-01-02",
+        "end": "2024-12-29"
+      },
+      "granularity": "weekly",
+      "primary_key": "date",
+      "update_frequency": "weekly",
+      "size_kb": 3.2,
+      "columns": {
+        "date": {
+          "type": "date",
+          "description": "Week start date",
+          "format": "YYYY-MM-DD",
+          "example": "2022-01-02",
+          "nullable": false
+        },
+        "major_content_releases": {
+          "type": "integer",
+          "description": "Number of major content releases (high-profile shows/events)",
+          "format": "integer",
+          "example": 2,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "regular_releases": {
+          "type": "integer",
+          "description": "Number of regular content releases (standard library additions)",
+          "format": "integer",
+          "example": 5,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "content_removals": {
+          "type": "integer",
+          "description": "Number of content pieces removed from library",
+          "format": "integer",
+          "example": 2,
+          "nullable": false,
+          "constraints": "not null, >= 0",
+          "unit": "count"
+        },
+        "net_content_score": {
+          "type": "integer",
+          "description": "Net content score (releases - removals)",
+          "format": "integer",
+          "example": 9,
+          "nullable": false,
+          "constraints": "not null",
+          "unit": "score",
+          "calculation": "(major_content_releases + regular_releases) - content_removals"
+        }
+      }
+    },
+    "elasticity_params": {
+      "filename": "elasticity-params.json",
+      "description": "Pre-calculated price elasticity coefficients by tier, segment, and cohort",
+      "format": "JSON",
+      "size_kb": 15,
+      "generated_date": "2026-01-13",
+      "estimation_method": "Hybrid approach combining historical price change analysis and industry benchmarks",
+      "confidence_level": 0.9,
+      "structure": {
+        "tiers": "Elasticity by tier (ad_supported, ad_free)",
+        "segments": "Segment-level elasticity by tenure (0-3mo, 3-12mo, 12+mo)",
+        "cohort_elasticity": "Elasticity by age, device, channel, promo status",
+        "cross_elasticity": "Cross-price elasticity between tiers",
+        "promotional_elasticity": "Elasticity for promotional pricing",
+        "time_horizon_adjustments": "Elasticity adjustments by time horizon",
+        "external_factor_adjustments": "Elasticity modifiers for external factors",
+        "willingness_to_pay": "WTP distributions by tier",
+        "churn_elasticity": "Churn rate sensitivity to price",
+        "acquisition_elasticity": "New subscriber sensitivity to price"
+      }
+    },
+    "scenarios": {
+      "filename": "scenarios.json",
+      "description": "Pre-built pricing scenario definitions for simulation",
+      "format": "JSON",
+      "size_kb": 8,
+      "record_count": 11,
+      "generated_date": "2026-01-13",
+      "categories": [
+        "price_increase",
+        "price_decrease",
+        "promotion",
+        "new_tier",
+        "bundling",
+        "policy_change",
+        "baseline"
+      ],
+      "structure": {
+        "id": "Unique scenario identifier",
+        "name": "Scenario display name",
+        "category": "Scenario type/category",
+        "description": "Detailed description",
+        "impact_summary": "Expected high-level impact",
+        "config": "Scenario configuration parameters",
+        "constraints": "Platform and policy constraints",
+        "priority": "Business priority (high/medium/low)",
+        "business_rationale": "Strategic rationale for scenario"
+      }
+    }
+  },
+  "business_glossary": {
+    "ARPU": {
+      "term": "Average Revenue Per User",
+      "definition": "Total revenue divided by active subscribers",
+      "calculation": "revenue / active_subscribers",
+      "unit": "USD",
+      "importance": "Key metric for pricing optimization"
+    },
+    "CLTV": {
+      "term": "Customer Lifetime Value",
+      "definition": "Predicted total revenue from a subscriber over their lifetime",
+      "calculation": "ARPU \u00d7 average_lifetime_months",
+      "unit": "USD",
+      "importance": "Long-term value metric for acquisition decisions"
+    },
+    "churn_rate": {
+      "term": "Churn Rate",
+      "definition": "Percentage of subscribers who cancel in a given period",
+      "calculation": "churned_subscribers / active_subscribers",
+      "unit": "percent",
+      "importance": "Key retention metric"
+    },
+    "price_elasticity": {
+      "term": "Price Elasticity of Demand",
+      "definition": "Percentage change in quantity demanded for 1% change in price",
+      "calculation": "% change in quantity / % change in price",
+      "unit": "coefficient",
+      "interpretation": {
+        "elastic": "Elasticity < -1: Demand is highly sensitive to price",
+        "inelastic": "Elasticity > -1: Demand is not very sensitive to price"
+      },
+      "importance": "Core metric for price optimization"
+    },
+    "net_adds": {
+      "term": "Net Subscriber Additions",
+      "definition": "New subscribers minus churned subscribers",
+      "calculation": "new_subscribers - churned_subscribers",
+      "unit": "count",
+      "importance": "Growth metric"
+    },
+    "cross_elasticity": {
+      "term": "Cross-Price Elasticity",
+      "definition": "How demand for one tier changes when price of another tier changes",
+      "calculation": "% change in demand for tier A / % change in price of tier B",
+      "unit": "coefficient",
+      "interpretation": {
+        "positive": "Substitute goods (increase price of B \u2192 demand for A increases)",
+        "negative": "Complementary goods (increase price of B \u2192 demand for A decreases)"
+      },
+      "importance": "Tier mix optimization"
+    },
+    "WTP": {
+      "term": "Willingness to Pay",
+      "definition": "Maximum price a subscriber is willing to pay for subscription",
+      "calculation": "Estimated from demand curves and survey data",
+      "unit": "USD",
+      "importance": "Price ceiling for optimization"
+    }
+  },
+  "data_quality": {
+    "completeness": {
+      "subscribers": "100% - No missing critical fields",
+      "weekly_aggregated": "100% - Complete time series",
+      "pricing_history": "100% - All price events captured",
+      "external_factors": "100% - Complete weekly data",
+      "marketing_spend": "100% - Complete weekly data",
+      "content_releases": "100% - Complete weekly data"
+    },
+    "consistency": {
+      "date_alignment": "All datasets aligned to Sunday week starts",
+      "price_consistency": "Prices reconcile across subscribers, pricing_history, and weekly_aggregated",
+      "subscriber_counts": "Subscriber counts consistent with aggregated metrics"
+    },
+    "accuracy": {
+      "estimation_method": "Synthetic data generated using realistic distributions and industry benchmarks",
+      "validation": "Data validated for logical consistency and business reasonableness",
+      "confidence": "High confidence for POC demonstration purposes"
+    }
+  },
+  "usage_notes": {
+    "data_loading": "All CSV files can be loaded with standard pandas read_csv() with header=0",
+    "date_parsing": "Dates in YYYY-MM-DD format, parse with pd.to_datetime()",
+    "boolean_fields": "Boolean fields are True/False strings, not 1/0",
+    "missing_values": "Missing values indicated by empty strings, not 'null' or 'NA'",
+    "currency": "All currency values in USD",
+    "time_zones": "All dates in US Eastern Time",
+    "aggregation": "Weekly aggregations start on Sunday",
+    "joins": "Join datasets on date and/or tier fields",
+    "elasticity_application": "Use elasticity-params.json for scenario simulation calculations",
+    "scenario_simulation": "Use scenarios.json as templates for pricing scenarios"
+  },
+  "future_enhancements": {
+    "recommended": [
+      "Add promo_code, promo_duration_months to subscribers.csv",
+      "Add churn_reason column to subscribers.csv",
+      "Split device_type 'mobile' into 'ios' and 'android'",
+      "Add region (geographic) and income_segment columns",
+      "Add reactivation tracking (reactivation_count, last_reactivation_date)",
+      "Add transaction-level billing data",
+      "Add Max, Paramount+, Peacock competitor data",
+      "Add cohort analysis tables"
+    ],
+    "optional": [
+      "Content-level engagement data",
+      "Experimental A/B test history",
+      "Pre-calculated migration matrices",
+      "Real-time data pipeline integration"
+    ]
+  },
+  "contact": {
+    "data_owner": "POC Development Team",
+    "last_updated": "2026-01-13",
+    "version": "1.0",
+    "questions": "Contact project team for data questions or issues"
+  }
+}

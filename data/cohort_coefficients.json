@@ -1,0 +1,168 @@
+{
+  "metadata": {
+    "description": "Behavioral archetype profiles for customer cohorts",
+    "version": "4.0",
+    "generation_date": "2026-01-29",
+    "method": "Profile mixing with non-linear dynamics"
+  },
+  "ultra_loyal": {
+    "label": "Ultra Loyal",
+    "description": "Habitual Streamers, Long-Tenure Loyalists, Content-Anchored High-Engagement",
+    "acquisition_elasticity": -0.65,
+    "churn_elasticity": 0.4,
+    "migration_upgrade": 1.4,
+    "migration_downgrade": 0.5,
+    "tenure_decay_rate": 0.08,
+    "engagement_offset": 0.4,
+    "price_history_habituation": 0.2,
+    "churn_curve_type": "delayed_ramp",
+    "migration_asymmetry_factor": 1.8,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.05,
+      "4_8_weeks": 0.1,
+      "8_12_weeks": 0.2,
+      "12_16_weeks": 0.35,
+      "16_20_weeks": 0.3
+    }
+  },
+  "value_conscious": {
+    "label": "Value Conscious",
+    "description": "Ad-Value Seekers, Value-Perception Buyers",
+    "acquisition_elasticity": -1.8,
+    "churn_elasticity": 7.5,
+    "migration_upgrade": 0.8,
+    "migration_downgrade": 1.3,
+    "tenure_decay_rate": 0.03,
+    "engagement_offset": 0.15,
+    "price_history_habituation": 0.05,
+    "churn_curve_type": "moderate",
+    "migration_asymmetry_factor": 2.2,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.15,
+      "4_8_weeks": 0.25,
+      "8_12_weeks": 0.3,
+      "12_16_weeks": 0.2,
+      "16_20_weeks": 0.1
+    }
+  },
+  "deal_hunter": {
+    "label": "Deal Hunter",
+    "description": "Promo-Only Users, Deal-Responsive Acquirers",
+    "acquisition_elasticity": -3.5,
+    "churn_elasticity": 15.0,
+    "migration_upgrade": 0.4,
+    "migration_downgrade": 2.0,
+    "tenure_decay_rate": 0.01,
+    "engagement_offset": 0.05,
+    "price_history_habituation": 0.0,
+    "churn_curve_type": "sharp_spike_plateau",
+    "migration_asymmetry_factor": 4.5,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.4,
+      "4_8_weeks": 0.35,
+      "8_12_weeks": 0.15,
+      "12_16_weeks": 0.07,
+      "16_20_weeks": 0.03
+    }
+  },
+  "content_driven": {
+    "label": "Content Driven",
+    "description": "Content-Anchored Viewers, TVOD-to-SVOD Converters",
+    "acquisition_elasticity": -1.2,
+    "churn_elasticity": 2.4,
+    "migration_upgrade": 1.1,
+    "migration_downgrade": 0.9,
+    "tenure_decay_rate": 0.05,
+    "engagement_offset": 0.25,
+    "price_history_habituation": 0.12,
+    "churn_curve_type": "conditional_spike",
+    "migration_asymmetry_factor": 2.0,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.12,
+      "4_8_weeks": 0.22,
+      "8_12_weeks": 0.3,
+      "12_16_weeks": 0.25,
+      "16_20_weeks": 0.11
+    }
+  },
+  "tier_flexible": {
+    "label": "Tier Flexible",
+    "description": "Price-Triggered Downgraders, Tier Switchers",
+    "acquisition_elasticity": -1.6,
+    "churn_elasticity": 8.5,
+    "migration_upgrade": 0.9,
+    "migration_downgrade": 2.7,
+    "tenure_decay_rate": 0.04,
+    "engagement_offset": 0.18,
+    "price_history_habituation": 0.08,
+    "churn_curve_type": "moderate",
+    "migration_asymmetry_factor": 3.8,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.18,
+      "4_8_weeks": 0.28,
+      "8_12_weeks": 0.28,
+      "12_16_weeks": 0.18,
+      "16_20_weeks": 0.08
+    }
+  },
+  "premium_seeker": {
+    "label": "Premium Seeker",
+    "description": "Ad-Free Loyalists, Ad-Intolerant Upgraders",
+    "acquisition_elasticity": -1.0,
+    "churn_elasticity": 0.7,
+    "migration_upgrade": 1.6,
+    "migration_downgrade": 0.4,
+    "tenure_decay_rate": 0.06,
+    "engagement_offset": 0.3,
+    "price_history_habituation": 0.15,
+    "churn_curve_type": "gentle_slope",
+    "migration_asymmetry_factor": 0.8,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.08,
+      "4_8_weeks": 0.12,
+      "8_12_weeks": 0.18,
+      "12_16_weeks": 0.3,
+      "16_20_weeks": 0.32
+    }
+  },
+  "at_risk": {
+    "label": "At Risk",
+    "description": "At-Risk Lapsers, Dormant Subscribers",
+    "acquisition_elasticity": -2.0,
+    "churn_elasticity": 12.0,
+    "migration_upgrade": 0.5,
+    "migration_downgrade": 1.8,
+    "tenure_decay_rate": -0.02,
+    "engagement_offset": 0.1,
+    "price_history_habituation": 0.03,
+    "churn_curve_type": "accelerating",
+    "migration_asymmetry_factor": 3.2,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.25,
+      "4_8_weeks": 0.3,
+      "8_12_weeks": 0.25,
+      "12_16_weeks": 0.13,
+      "16_20_weeks": 0.07
+    }
+  },
+  "baseline": {
+    "label": "Baseline",
+    "description": "Aggregate of all cohorts weighted by population",
+    "acquisition_elasticity": -0.82,
+    "churn_elasticity": 6.5,
+    "migration_upgrade": 1.0,
+    "migration_downgrade": 1.2,
+    "tenure_decay_rate": 0.05,
+    "engagement_offset": 0.2,
+    "price_history_habituation": 0.1,
+    "churn_curve_type": "moderate",
+    "migration_asymmetry_factor": 2.2,
+    "time_lag_distribution": {
+      "0_4_weeks": 0.15,
+      "4_8_weeks": 0.25,
+      "8_12_weeks": 0.3,
+      "12_16_weeks": 0.2,
+      "16_20_weeks": 0.1
+    }
+  }
+}

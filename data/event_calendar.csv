@@ -1,0 +1,32 @@
+event_id,date,event_type,tier,affected_cohort,price_before,price_after,promo_id,promo_discount_pct,notes,validation_window
+EVT_001,2022-01-02,Tentpole,all,all,0,0,,0,New Year content slate launch,clean
+EVT_002,2022-03-13,Tentpole,all,content_anchored_viewers,0,0,,0,March Madness coverage launch,clean
+EVT_003,2022-03-20,Tentpole,all,habitual_streamers,0,0,,0,Spring series premiere block,clean
+EVT_004,2022-05-15,Tentpole,all,all,0,0,,0,Summer content launch,clean
+EVT_005,2022-06-05,Tentpole,all,all,0,0,,0,Major documentary series premiere,clean
+EVT_006,2022-06-12,Tentpole,all,content_anchored_viewers,0,0,,0,Exclusive sports rights launch,clean
+EVT_007,2022-08-07,Tentpole,all,all,0,0,,0,Back to school content block,clean
+EVT_008,2022-09-04,Tentpole,all,habitual_streamers,0,0,,0,Fall season premiere week,clean
+EVT_009,2022-09-18,Tentpole,all,all,0,0,,0,Emmy-winning series launch,clean
+EVT_010,2022-11-06,Promo Start,ad_supported,promo_only_users,4.99,3.49,PROMO_2022_HOLIDAY,30,Holiday acquisition campaign begins,confounded
+EVT_011,2022-11-06,Promo Start,ad_free,deal_responsive_acquirers,6.99,4.89,PROMO_2022_HOLIDAY,30,Holiday acquisition campaign begins,confounded
+EVT_012,2022-12-11,Tentpole,all,all,0,0,,0,Holiday special releases,confounded
+EVT_013,2022-12-18,Tentpole,all,content_anchored_viewers,0,0,,0,Year-end blockbuster premiere,confounded
+EVT_014,2022-12-25,Tentpole,all,all,0,0,,0,Christmas Day premiere event,confounded
+EVT_015,2023-01-01,Promo End,ad_supported,promo_only_users,3.49,4.99,PROMO_2022_HOLIDAY,0,Holiday promo ends - return to full price,test
+EVT_016,2023-01-01,Promo End,ad_free,deal_responsive_acquirers,4.89,6.99,PROMO_2022_HOLIDAY,0,Holiday promo ends - return to full price,test
+EVT_017,2023-01-29,Tentpole,all,habitual_streamers,0,0,,0,Super Bowl pre-game content,clean
+EVT_018,2023-02-05,Tentpole,all,all,0,0,,0,Post-Super Bowl series launch,clean
+EVT_019,2023-02-12,Tentpole,all,content_anchored_viewers,0,0,,0,Awards season specials,clean
+EVT_020,2023-03-05,Tentpole,all,all,0,0,,0,Spring premiere week,clean
+EVT_021,2023-06-04,Price Change,ad_supported,all,4.99,5.99,,0,20% price increase - market adjustment,test
+EVT_022,2023-06-04,Price Change,ad_free,all,6.99,7.99,,0,14.3% price increase - content investment,test
+EVT_023,2023-11-01,Promo Roll-off,ad_supported,promo_only_users,3.49,4.99,PROMO_2022_HOLIDAY,0,12-month roll-off for Nov 2022 cohort,test
+EVT_024,2023-11-01,Promo Roll-off,ad_free,deal_responsive_acquirers,4.89,6.99,PROMO_2022_HOLIDAY,0,12-month roll-off for Nov 2022 cohort,test
+EVT_025,2023-11-05,Promo Start,ad_supported,promo_only_users,5.99,4.19,PROMO_2023_HOLIDAY,30,Holiday 2023 campaign - 30% off,confounded
+EVT_026,2023-11-05,Promo Start,ad_free,deal_responsive_acquirers,8.99,5.59,PROMO_2023_HOLIDAY,30,Holiday 2023 campaign - 30% off,confounded
+EVT_027,2024-01-01,Promo End,ad_supported,promo_only_users,4.19,5.99,PROMO_2023_HOLIDAY,0,Holiday 2023 promo ends,test
+EVT_028,2024-01-01,Promo End,ad_free,deal_responsive_acquirers,5.59,7.99,PROMO_2023_HOLIDAY,0,Holiday 2023 promo ends,test
+EVT_029,2024-03-03,Price Change,ad_free,ad_free_loyalists,8.99,9.99,,0,12.5% price increase - premium tier optimization,test
+EVT_030,2024-11-01,Promo Roll-off,ad_supported,promo_only_users,4.19,5.99,PROMO_2023_HOLIDAY,0,12-month roll-off for Nov 2023 cohort,test
+EVT_031,2024-11-01,Promo Roll-off,ad_free,deal_responsive_acquirers,5.59,7.99,PROMO_2023_HOLIDAY,0,12-month roll-off for Nov 2023 cohort,test
