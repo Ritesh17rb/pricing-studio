@@ -1,11 +1,11 @@
 /**
  * Main Application Module
- * Orchestrates the Streaming Service Price Elasticity Demo
+ * Orchestrates the Legoland Pricing & Revenue Optimization Studio
  *
  * Dependencies: data-loader.js, scenario-engine.js, charts.js
  */
 
-import { loadAllData, loadScenarios, getWeeklyData, loadElasticityParams } from './data-loader.js';
+import { loadAllData, loadScenarios, getDailyData, getWeeklyData, loadElasticityParams } from './data-loader.js';
 import {
   simulateScenario,
   simulateScenarioWithPyodide,
@@ -27,8 +27,8 @@ import { exportToPDF, exportToXLSX } from './decision-pack.js';
 let allScenarios = [];
 let dataLoaded = false;
 
-const modelTypes = ['acquisition', 'churn', 'migration'];
-let activeModelType = 'acquisition';
+const modelTypes = ['acquisition', 'churn', 'migration']; // Internal IDs maintained for compatibility
+let activeModelType = 'acquisition'; // acquisition = new_visits, churn = loyalty, migration = pass_migration
 
 let selectedScenarioByModel = {
   acquisition: null,
@@ -292,33 +292,33 @@ function startSimulateLoading() {
 // Load KPI data
 async function loadKPIs() {
   try {
-    const weeklyData = await getWeeklyData('all');
-    const latestWeek = {};
+    const dailyData = await getDailyData('all');
+    const latestDay = {};
 
-    // Get latest week for each tier
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierData = weeklyData.filter(d => d.tier === tier);
-      latestWeek[tier] = tierData[tierData.length - 1];
+    // Get latest day for each tier
+    ['standard_pass', 'premium_pass', 'vip_pass'].forEach(tier => {
+      const tierData = dailyData.filter(d => d.membership_tier === tier);
+      latestDay[tier] = tierData[tierData.length - 1];
     });
 
     // Calculate totals
-    const totalSubs = Object.values(latestWeek).reduce((sum, d) => sum + d.active_subscribers, 0);
-    const totalRevenue = Object.values(latestWeek).reduce((sum, d) => sum + d.revenue, 0) * 4; // Weekly to monthly
-    const avgARPU = totalRevenue / totalSubs;
-    const avgChurn = Object.values(latestWeek).reduce((sum, d) => sum + d.churn_rate, 0) / 2;
+    const totalVisitors = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_visitors || 0), 0);
+    const totalRevenue = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_revenue || 0), 0) * 30; // Daily to monthly estimate
+    const avgARPV = totalRevenue / (totalVisitors * 30);
+    const avgReturnRate = Object.values(latestDay).reduce((sum, d) => sum + (d.return_rate || 0), 0) / 3;
 
     // Update KPI cards
-    document.getElementById('kpi-subscribers').textContent = formatNumber(totalSubs);
+    document.getElementById('kpi-subscribers').textContent = formatNumber(totalVisitors);
     document.getElementById('kpi-revenue').textContent = formatCurrency(totalRevenue);
-    document.getElementById('kpi-arpu').textContent = formatCurrency(avgARPU);
-    // avgChurn is already a decimal (0.05 = 5%), formatPercent will multiply by 100
-    document.getElementById('kpi-churn').textContent = formatPercent(avgChurn);
+    document.getElementById('kpi-arpu').textContent = formatCurrency(avgARPV);
+    // avgReturnRate is already a decimal (0.85 = 85%), formatPercent will multiply by 100
+    document.getElementById('kpi-return').textContent = formatPercent(avgReturnRate);
 
-    // Note: Change indicators would require comparing to previous week
+    // Note: Change indicators would require comparing to previous day
     document.getElementById('kpi-subscribers-change').textContent = '+2.3%';
     document.getElementById('kpi-revenue-change').textContent = '+1.8%';
-    document.getElementById('kpi-arpu-change').textContent = '$6.89';
-    document.getElementById('kpi-churn-change').textContent = '4.2%';
+    document.getElementById('kpi-arpu-change').textContent = '$4.50';
+    document.getElementById('kpi-return-change').textContent = '82.5%';
 
   } catch (error) {
     console.error('Error loading KPIs:', error);
@@ -341,13 +341,13 @@ async function loadScenariosData() {
 async function updateElasticityAnalysis(result) {
   try {
     const params = await loadElasticityParams();
-    const weeklyData = await getWeeklyData('all');
+    const dailyData = await getDailyData('all');
 
     // Get baseline data
-    const latestWeek = {};
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierData = weeklyData.filter(d => d.tier === tier);
-      latestWeek[tier] = tierData[tierData.length - 1];
+    const latestDay = {};
+    ['standard_pass', 'premium_pass', 'vip_pass'].forEach(tier => {
+      const tierData = dailyData.filter(d => d.membership_tier === tier);
+      latestDay[tier] = tierData[tierData.length - 1];
     });
 
     // Determine which tier was affected by the scenario
@@ -357,24 +357,32 @@ async function updateElasticityAnalysis(result) {
     const demandCurveData = {
       tiers: [
         {
-          name: 'Ad-Lite',
-          elasticity: params.tiers.ad_supported.base_elasticity,
-          currentPrice: 5.99,
-          currentSubs: latestWeek.ad_supported.active_subscribers,
-          newPrice: affectedTier === 'ad_supported' ? scenarioPrice : null,
-          newSubs: affectedTier === 'ad_supported' ? result.forecasted.subscribers : null,
+          name: 'Standard Pass',
+          elasticity: params.standard_pass?.base_elasticity || -1.9,
+          currentPrice: 79,
+          currentSubs: latestDay.standard_pass?.daily_visitors || 0,
+          newPrice: affectedTier === 'standard_pass' ? scenarioPrice : null,
+          newSubs: affectedTier === 'standard_pass' ? result.forecasted.visitors : null,
           color: '#dc3545'
         },
         {
-          name: 'Ad-Free',
-          elasticity: params.tiers.ad_free.base_elasticity,
-          currentPrice: 9.99,
-          currentSubs: latestWeek.ad_free.active_subscribers,
-          newPrice: affectedTier === 'ad_free' ? scenarioPrice : null,
-          newSubs: affectedTier === 'ad_free' ? result.forecasted.subscribers : null,
+          name: 'Premium Pass',
+          elasticity: params.premium_pass?.base_elasticity || -1.5,
+          currentPrice: 139,
+          currentSubs: latestDay.premium_pass?.daily_visitors || 0,
+          newPrice: affectedTier === 'premium_pass' ? scenarioPrice : null,
+          newSubs: affectedTier === 'premium_pass' ? result.forecasted.visitors : null,
           color: '#ffc107'
         },
-        
+        {
+          name: 'VIP Pass',
+          elasticity: params.vip_pass?.base_elasticity || -1.3,
+          currentPrice: 249,
+          currentSubs: latestDay.vip_pass?.daily_visitors || 0,
+          newPrice: affectedTier === 'vip_pass' ? scenarioPrice : null,
+          newSubs: affectedTier === 'vip_pass' ? result.forecasted.visitors : null,
+          color: '#28a745'
+        }
       ]
     };
 
@@ -388,32 +396,38 @@ async function updateElasticityAnalysis(result) {
 async function loadElasticityAnalytics() {
   try {
     const params = await loadElasticityParams();
-    const weeklyData = await getWeeklyData('all');
+    const dailyData = await getDailyData('all');
 
     // Prepare demand curve data
-    const latestWeek = {};
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierData = weeklyData.filter(d => d.tier === tier);
-      latestWeek[tier] = tierData[tierData.length - 1];
+    const latestDay = {};
+    ['standard_pass', 'premium_pass', 'vip_pass'].forEach(tier => {
+      const tierData = dailyData.filter(d => d.membership_tier === tier);
+      latestDay[tier] = tierData[tierData.length - 1];
     });
 
     const demandCurveData = {
       tiers: [
         {
-          name: 'Ad-Lite',
-          elasticity: params.tiers.ad_supported.base_elasticity,
-          currentPrice: 5.99,
-          currentSubs: latestWeek.ad_supported.active_subscribers,
+          name: 'Standard Pass',
+          elasticity: params.standard_pass?.base_elasticity || -1.9,
+          currentPrice: 79,
+          currentSubs: latestDay.standard_pass?.daily_visitors || 0,
           color: '#dc3545'
         },
         {
-          name: 'Ad-Free',
-          elasticity: params.tiers.ad_free.base_elasticity,
-          currentPrice: 9.99,
-          currentSubs: latestWeek.ad_free.active_subscribers,
+          name: 'Premium Pass',
+          elasticity: params.premium_pass?.base_elasticity || -1.5,
+          currentPrice: 139,
+          currentSubs: latestDay.premium_pass?.daily_visitors || 0,
           color: '#ffc107'
         },
-        
+        {
+          name: 'VIP Pass',
+          elasticity: params.vip_pass?.base_elasticity || -1.3,
+          currentPrice: 249,
+          currentSubs: latestDay.vip_pass?.daily_visitors || 0,
+          color: '#28a745'
+        }
       ]
     };
 
@@ -421,19 +435,19 @@ async function loadElasticityAnalytics() {
 
     // Prepare heatmap data
     const segments = ['new_0_3mo', 'tenured_3_12mo', 'tenured_12plus'];
-    const tiers = ['ad_supported', 'ad_free'];
+    const tiers = ['standard_pass', 'premium_pass', 'vip_pass'];
     const values = segments.map(segment =>
       tiers.map(tier => {
-        if (params.tiers[tier].segments && params.tiers[tier].segments[segment]) {
-          return params.tiers[tier].segments[segment].elasticity;
+        if (params[tier]?.segments && params[tier].segments[segment]) {
+          return params[tier].segments[segment];
         }
-        return params.tiers[tier].base_elasticity;
+        return params[tier]?.base_elasticity || -1.5;
       })
     );
 
     const heatmapData = {
       segments: ['New (0-3mo)', 'Tenured (3-12mo)', 'Tenured (12+mo)'],
-      tiers: ['Ad-Lite', 'Ad-Free'],
+      tiers: ['Standard Pass', 'Premium Pass', 'VIP Pass'],
       values: values
     };
 
@@ -451,16 +465,16 @@ let allSimulationResults = allSimulationResultsByModel[activeModelType];
 async function initializeChatContext() {
   try {
     // Get current KPI values
-    const weeklyData = await getWeeklyData('all');
-    const latestWeek = {};
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierData = weeklyData.filter(d => d.tier === tier);
-      latestWeek[tier] = tierData[tierData.length - 1];
+    const dailyData = await getDailyData('all');
+    const latestDay = {};
+    ['standard_pass', 'premium_pass', 'vip_pass'].forEach(tier => {
+      const tierData = dailyData.filter(d => d.membership_tier === tier);
+      latestDay[tier] = tierData[tierData.length - 1];
     });
 
-    const totalSubs = Object.values(latestWeek).reduce((sum, d) => sum + d.active_subscribers, 0);
-    const totalRevenue = Object.values(latestWeek).reduce((sum, d) => sum + d.revenue, 0) * 4;
-    const avgChurn = Object.values(latestWeek).reduce((sum, d) => sum + d.churn_rate, 0) / 2;
+    const totalVisitors = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_visitors || 0), 0);
+    const totalRevenue = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_revenue || 0), 0) * 30;
+    const avgReturnRate = Object.values(latestDay).reduce((sum, d) => sum + (d.return_rate || 0), 0) / 3;
 
     // Load elasticity parameters for visualization context
     const elasticityParams = await loadElasticityParams();
@@ -481,17 +495,18 @@ async function initializeChatContext() {
 
       // Business context
       businessContext: {
-        currentSubscribers: totalSubs,
+        currentVisitors: totalVisitors,
         currentRevenue: totalRevenue,
-        currentChurn: avgChurn,
+        currentReturnRate: avgReturnRate,
         elasticityByTier: {
-          ad_supported: elasticityParams.tiers.ad_supported.base_elasticity,
-          ad_free: elasticityParams.tiers.ad_free.base_elasticity,
-          
+          standard_pass: elasticityParams.standard_pass?.base_elasticity || -1.9,
+          premium_pass: elasticityParams.premium_pass?.base_elasticity || -1.5,
+          vip_pass: elasticityParams.vip_pass?.base_elasticity || -1.3
         },
         tierPricing: {
-          ad_supported: 5.99,
-          ad_free: 9.99
+          standard_pass: 79,
+          premium_pass: 139,
+          vip_pass: 249
         }
       },
 
@@ -1878,6 +1893,10 @@ async function init() {
   // Make loadData available globally so it can be called when navigating to step 1
   window.loadAppData = loadData;
   window.dataLoaded = false;
+
+  // Export segmentation functions for step navigation
+  window.initializeSegmentationSection = initializeSegmentationSection;
+  window.initializeSegmentComparison = initializeSegmentComparison;
 }
 
 // Start app

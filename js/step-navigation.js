@@ -162,7 +162,7 @@ function showStepContent(step) {
     case 3:
       // Event Calendar
       const eventCalendarSection = document.getElementById('event-calendar-section');
-      const calendarContentArea = document.getElementById('step-8-calendar-container-content');
+      const calendarContentArea = document.getElementById('step-8-calendar-container');
       if (eventCalendarSection && calendarContentArea) {
         eventCalendarSection.style.display = 'block';
         if (eventCalendarSection.parentElement !== calendarContentArea) {
@@ -173,7 +173,7 @@ function showStepContent(step) {
     case 4:
       // Customer Cohorts & Elasticity (segmentation only)
       const segmentationSection6 = document.getElementById('segmentation-section');
-      const segmentContentArea6 = document.getElementById('step-6-segmentation-container-content');
+      const segmentContentArea6 = document.getElementById('step-6-segmentation-container');
       if (segmentationSection6 && segmentContentArea6) {
         segmentationSection6.style.display = 'block';
         if (segmentationSection6.parentElement !== segmentContentArea6) {
@@ -201,7 +201,7 @@ function showStepContent(step) {
     case 5:
       // Segment Elasticity Comparison (analysis only)
       const segmentAnalysisSection7 = document.getElementById('segment-analysis-section');
-      const analysisContentArea7 = document.getElementById('step-7-analysis-container-content');
+      const analysisContentArea7 = document.getElementById('step-7-analysis-container');
       if (segmentAnalysisSection7 && analysisContentArea7) {
         segmentAnalysisSection7.style.display = 'block';
         if (segmentAnalysisSection7.parentElement !== analysisContentArea7) {
@@ -235,7 +235,7 @@ function showStepContent(step) {
           // Small delay to ensure DOM is ready
           setTimeout(() => window.initAcquisitionSimple(), 100);
         } else {
-          const container = document.getElementById('step-3-acquisition-container-content');
+          const container = document.getElementById('step-3-acquisition-container');
           showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
         }
       }
@@ -248,7 +248,7 @@ function showStepContent(step) {
         if (window.dataLoaded) {
           setTimeout(() => window.initChurnSimple(), 100);
         } else {
-          const container = document.getElementById('step-4-churn-container-content');
+          const container = document.getElementById('step-4-churn-container');
           showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
         }
       }
@@ -261,7 +261,7 @@ function showStepContent(step) {
         if (window.dataLoaded) {
           setTimeout(() => window.initMigrationSimple(), 100);
         } else {
-          const container = document.getElementById('step-5-migration-container-content');
+          const container = document.getElementById('step-5-migration-container');
           showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
         }
       }
