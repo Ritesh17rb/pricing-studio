@@ -13,36 +13,36 @@ class SegmentationEngine {
         this.cohortCoefficients = null;
         this.activeCohort = 'baseline';
 
-        // Strategic segment axis definitions (based on customer personas)
+        // Strategic segment axis definitions (based on visitor personas)
         this.axisDefinitions = {
             acquisition: [
-                'habitual_streamers',
-                'content_anchored_viewers',
-                'at_risk_lapsers',
-                'promo_only_users',
-                'dormant_subscribers'
+                'one_time',
+                'occasional',
+                'regular',
+                'frequent',
+                'season_pass'
             ],
             engagement: [
-                'ad_value_seekers',
-                'ad_tolerant_upgraders',
-                'ad_free_loyalists',
-                'price_triggered_downgraders',
-                'tvod_inclined_buyers'
+                'solo',
+                'couple',
+                'family_small',
+                'family_large',
+                'group'
             ],
             monetization: [
-                'platform_bundled_acquirers',
-                'tvod_to_svod_converters',
-                'content_triggered_buyers',
-                'deal_responsive_acquirers',
-                'value_perception_buyers'
+                'budget',
+                'value',
+                'standard',
+                'premium',
+                'luxury'
             ]
         };
 
         // Axis labels for display
         this.axisLabels = {
-            acquisition: 'Axis 3: Acquisition Price Sensitivity',
-            engagement: 'Axis 2: Engagement & Churn Propensity',
-            monetization: 'Axis 1: Monetization & Plan Type'
+            acquisition: 'Axis 1: Acquisition (Visit Frequency)',
+            engagement: 'Axis 2: Engagement (Party Composition)',
+            monetization: 'Axis 3: Monetization (Price Sensitivity)'
         };
 
         // Segment descriptions and characteristics

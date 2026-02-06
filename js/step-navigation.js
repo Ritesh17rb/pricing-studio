@@ -6,6 +6,21 @@
 
 const TOTAL_STEPS = 10; // 0-9
 let currentStep = 0;
+
+// Track which steps have been initialized to prevent duplicate calls
+const stepInitialized = {
+  0: true,  // Hero always ready
+  1: false, // Dashboard (initialized after data load)
+  2: false, // Data Explorer
+  3: false, // Event Calendar
+  4: false, // Segmentation
+  5: false, // Segment Comparison
+  6: false, // Acquisition
+  7: false, // Churn
+  8: false, // Migration
+  9: false  // Chat
+};
+
 const stepSectionMap = {
   0: 'section-0',
   1: 'section-1',
@@ -164,6 +179,23 @@ function showStepContent(step) {
         if (segmentationSection6.parentElement !== segmentContentArea6) {
           segmentContentArea6.appendChild(segmentationSection6);
         }
+
+        // CRITICAL FIX: Initialize segmentation on navigation (only once)
+        if (!stepInitialized[4] && window.initializeSegmentationSection && typeof window.initializeSegmentationSection === 'function') {
+          if (window.dataLoaded && window.segmentEngine) {
+            setTimeout(() => {
+              try {
+                window.initializeSegmentationSection();
+                stepInitialized[4] = true; // Mark as initialized
+              } catch (error) {
+                console.error('Failed to initialize segmentation:', error);
+                showStepError(segmentContentArea6, 'Failed to load visitor cohort data. Please refresh the page.');
+              }
+            }, 100);
+          } else {
+            showStepError(segmentContentArea6, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
+          }
+        }
       }
       break;
     case 5:
@@ -175,6 +207,23 @@ function showStepContent(step) {
         if (segmentAnalysisSection7.parentElement !== analysisContentArea7) {
           analysisContentArea7.appendChild(segmentAnalysisSection7);
         }
+
+        // CRITICAL FIX: Initialize segment comparison on navigation (only once)
+        if (!stepInitialized[5] && window.initializeSegmentComparison && typeof window.initializeSegmentComparison === 'function') {
+          if (window.dataLoaded && window.segmentEngine) {
+            setTimeout(() => {
+              try {
+                window.initializeSegmentComparison();
+                stepInitialized[5] = true; // Mark as initialized
+              } catch (error) {
+                console.error('Failed to initialize segment comparison:', error);
+                showStepError(analysisContentArea7, 'Failed to load segment comparison data. Please refresh the page.');
+              }
+            }, 100);
+          } else {
+            showStepError(analysisContentArea7, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
+          }
+        }
       }
       break;
     case 6:
@@ -182,8 +231,13 @@ function showStepContent(step) {
       showElasticityModel('acquisition', 'step-3-acquisition-container');
       // Initialize simplified acquisition model
       if (window.initAcquisitionSimple && typeof window.initAcquisitionSimple === 'function') {
-        // Small delay to ensure DOM is ready
-        setTimeout(() => window.initAcquisitionSimple(), 100);
+        if (window.dataLoaded) {
+          // Small delay to ensure DOM is ready
+          setTimeout(() => window.initAcquisitionSimple(), 100);
+        } else {
+          const container = document.getElementById('step-3-acquisition-container-content');
+          showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
+        }
       }
       break;
     case 7:
@@ -191,7 +245,12 @@ function showStepContent(step) {
       showElasticityModel('churn', 'step-4-churn-container');
       // Initialize simplified churn model
       if (window.initChurnSimple && typeof window.initChurnSimple === 'function') {
-        setTimeout(() => window.initChurnSimple(), 100);
+        if (window.dataLoaded) {
+          setTimeout(() => window.initChurnSimple(), 100);
+        } else {
+          const container = document.getElementById('step-4-churn-container-content');
+          showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
+        }
       }
       break;
     case 8:
@@ -199,7 +258,12 @@ function showStepContent(step) {
       showElasticityModel('migration', 'step-5-migration-container');
       // Initialize simplified migration model
       if (window.initMigrationSimple && typeof window.initMigrationSimple === 'function') {
-        setTimeout(() => window.initMigrationSimple(), 100);
+        if (window.dataLoaded) {
+          setTimeout(() => window.initMigrationSimple(), 100);
+        } else {
+          const container = document.getElementById('step-5-migration-container-content');
+          showStepError(container, 'Data is still loading. Please wait for Step 1 to complete.');
+        }
       }
       break;
     case 9:
@@ -379,6 +443,30 @@ function initStepsOverviewModal() {
       modalInstance.hide();
     });
   });
+}
+
+/**
+ * Display user-facing error message in a step container
+ * @param {HTMLElement} container - Container to show error in
+ * @param {string} message - Error message to display
+ */
+function showStepError(container, message) {
+  if (!container) return;
+
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'alert alert-warning mt-3';
+  errorDiv.innerHTML = `
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Unable to load this step:</strong> ${message}
+    <button class="btn btn-sm btn-outline-warning ms-3" onclick="location.reload()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh Page
+    </button>
+  `;
+
+  // Only add if not already present
+  if (!container.querySelector('.alert-warning')) {
+    container.insertBefore(errorDiv, container.firstChild);
+  }
 }
 
 /**
