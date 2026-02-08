@@ -653,7 +653,7 @@ All three priority phases (P1, P2, P3) are complete with 375 behavioral segments
 
 ---
 
-**Project Team:** Prudhvi Krovvidi
+**Project Team:** Ritesh Kumar
 **Last Updated:** January 22, 2026
 **Version:** 3.1
 **Confidentiality:** Confidential & Proprietary
