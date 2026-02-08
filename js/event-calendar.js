@@ -11,9 +11,10 @@ let allEvents = [];
 let promoMetadata = {};
 let validationWindows = {};
 let activeFilters = {
-  priceChange: true,
-  promo: true,
-  tentpole: true
+  holiday: true,
+  special_event: true,
+  school_break: true,
+  weather: true
 };
 
 /**
@@ -61,11 +62,11 @@ function updateEventCountBadge() {
   const badge = document.getElementById('event-count-badge');
   if (badge) {
     const counts = {
-      priceChange: allEvents.filter(e => e.event_type === 'Price Change').length,
-      promo: allEvents.filter(e => e.event_type.includes('Promo')).length,
-      tentpole: allEvents.filter(e => e.event_type === 'Tentpole').length
+      holidays: allEvents.filter(e => e.event_type === 'holiday').length,
+      events: allEvents.filter(e => e.event_type === 'special_event').length,
+      schoolBreaks: allEvents.filter(e => e.event_type === 'school_break').length
     };
-    badge.textContent = `${allEvents.length} Events (${counts.priceChange} Price Changes, ${counts.promo} Promos, ${counts.tentpole} Tentpoles)`;
+    badge.textContent = `${allEvents.length} Events (${counts.holidays} Holidays, ${counts.events} Special Events, ${counts.schoolBreaks} School Breaks)`;
   }
 }
 
@@ -84,9 +85,9 @@ function renderEventTimeline() {
     return;
   }
 
-  // Get date range (2022-2024)
-  const startDate = new Date('2022-01-01');
-  const endDate = new Date('2024-12-31');
+  // Get date range (2024-2026 for theme park data)
+  const startDate = new Date('2024-01-01');
+  const endDate = new Date('2026-01-01');
   const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
 
   // Build timeline slider HTML
@@ -97,15 +98,19 @@ function renderEventTimeline() {
     <div class="d-flex justify-content-center gap-4 mb-3">
       <div class="d-flex align-items-center">
         <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--primary-green); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);"></div>
-        <span class="ms-2 small">Price Changes</span>
+        <span class="ms-2 small">Holidays</span>
       </div>
       <div class="d-flex align-items-center">
         <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--primary-blue); box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);"></div>
-        <span class="ms-2 small">Promos</span>
+        <span class="ms-2 small">Special Events</span>
       </div>
       <div class="d-flex align-items-center">
         <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--primary-orange); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);"></div>
-        <span class="ms-2 small">Tentpole Content</span>
+        <span class="ms-2 small">School Breaks</span>
+      </div>
+      <div class="d-flex align-items-center">
+        <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--bs-secondary); box-shadow: 0 0 0 4px rgba(108, 117, 125, 0.2);"></div>
+        <span class="ms-2 small">Weather</span>
       </div>
     </div>
     <p class="text-center text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Click on any event marker to see details</p>
@@ -113,36 +118,40 @@ function renderEventTimeline() {
 
   // Year markers
   html += '<div class="timeline-years">';
-  html += '<div class="timeline-year-marker" style="left: 0%;">2022</div>';
-  html += '<div class="timeline-year-marker" style="left: 33.33%;">2023</div>';
-  html += '<div class="timeline-year-marker" style="left: 66.66%;">2024</div>';
-  html += '<div class="timeline-year-marker" style="left: 100%;"></div>';
+  html += '<div class="timeline-year-marker" style="left: 0%;">2024</div>';
+  html += '<div class="timeline-year-marker" style="left: 50%;">2025</div>';
+  html += '<div class="timeline-year-marker" style="left: 100%;">2026</div>';
   html += '</div>';
 
   // Timeline track
   html += '<div class="timeline-track">';
 
   // Add event markers
-  filteredEvents.forEach(event => {
+  filteredEvents.forEach((event, index) => {
     const eventDate = new Date(event.date);
     const daysSinceStart = Math.floor((eventDate - startDate) / (1000 * 60 * 60 * 24));
     const positionPercent = (daysSinceStart / totalDays) * 100;
 
+    // Skip events outside timeline range
+    if (positionPercent < 0 || positionPercent > 100) return;
+
     // Determine event class based on type
     let eventClass = 'timeline-event';
-    if (event.event_type === 'Price Change') {
+    if (event.event_type === 'holiday') {
       eventClass += ' event-price';
-    } else if (event.event_type.includes('Promo')) {
+    } else if (event.event_type === 'special_event') {
       eventClass += ' event-promo';
-    } else if (event.event_type === 'Tentpole') {
+    } else if (event.event_type === 'school_break') {
       eventClass += ' event-content';
+    } else if (event.event_type === 'weather') {
+      eventClass += ' event-weather';
     }
 
     html += `
       <div class="${eventClass}"
            style="left: ${positionPercent}%;"
-           data-event-id="${event.event_id}"
-           title="${event.event_type} - ${eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}">
+           data-event-index="${index}"
+           title="${event.event_name} - ${eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}">
       </div>
     `;
   });
@@ -160,8 +169,8 @@ function renderEventTimeline() {
   const eventMarkers = container.querySelectorAll('.timeline-event');
   eventMarkers.forEach(marker => {
     marker.addEventListener('click', () => {
-      const eventId = marker.dataset.eventId;
-      const event = filteredEvents.find(e => e.event_id === eventId);
+      const eventIndex = parseInt(marker.dataset.eventIndex);
+      const event = filteredEvents[eventIndex];
       if (event) {
         showEventDetails(event);
       }
@@ -179,30 +188,43 @@ function showEventDetails(event) {
 
   const eventDate = new Date(event.date);
   const dateStr = eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const badge = getEventBadge(event.event_type);
-  const priceInfo = getEventPriceInfo(event);
+
+  // Get event type display name
+  const eventTypeMap = {
+    'holiday': 'Holiday',
+    'special_event': 'Special Event',
+    'school_break': 'School Break',
+    'weather': 'Weather Event'
+  };
+  const eventTypeDisplay = eventTypeMap[event.event_type] || event.event_type;
+
+  // Get impact level badge
+  const impactClass = event.impact_level === 'high' ? 'danger' : event.impact_level === 'medium' ? 'warning' : 'info';
 
   let html = `
     <div class="glass-card p-4">
       <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-          <h6 class="mb-2">
-            <span class="badge ${badge.class} me-2">${badge.text}</span>
-            ${event.tier !== 'all' ? `<span class="badge bg-secondary">${formatTier(event.tier)}</span>` : ''}
-          </h6>
+          <h5 class="mb-2">${event.event_name}</h5>
+          <div class="mb-2">
+            <span class="badge bg-primary me-2">${eventTypeDisplay}</span>
+            <span class="badge bg-${impactClass}">${event.impact_level} Impact</span>
+          </div>
           <div class="text-muted small">
             <i class="bi bi-calendar-event me-2"></i>${dateStr}
           </div>
         </div>
         <button type="button" class="btn-close" onclick="document.getElementById('timeline-details').style.display='none'"></button>
       </div>
-      <p class="mb-2">${event.notes || 'No description available'}</p>
-      ${priceInfo ? `<div class="alert alert-info mb-0"><i class="bi bi-info-circle me-2"></i>${priceInfo}</div>` : ''}
+      <p class="mb-0"><strong>Expected Impact:</strong> ${event.impact_level.charAt(0).toUpperCase() + event.impact_level.slice(1)} visitor impact expected for this ${eventTypeDisplay.toLowerCase()}.</p>
     </div>
   `;
 
   detailsPanel.innerHTML = html;
   detailsPanel.style.display = 'block';
+
+  // Scroll to details
+  detailsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 /**
@@ -307,7 +329,7 @@ function renderPromoCards() {
             </div>
             <div class="mt-3 small text-muted">
               <strong>Tags:</strong> ${promo.campaign_tags.map(tag =>
-                `<span class="badge text-dark me-1">${tag}</span>`
+                `<span class="badge bg-secondary text-white me-1">${tag}</span>`
               ).join('')}
             </div>
           </div>
@@ -359,15 +381,15 @@ function renderValidationWindows() {
 function setupEventFilters() {
   const filterAll = document.getElementById('filter-all');
   const filterPriceChange = document.getElementById('filter-price-change');
-  const filterPromo = document.getElementById('filter-promo');
-  const filterTentpole = document.getElementById('filter-tentpole');
+  const filterPromo = document.getElementById('filter-special-event');
+  const filterTentpole = document.getElementById('filter-school-break');
 
   if (filterAll) {
     filterAll.addEventListener('change', (e) => {
       const checked = e.target.checked;
-      activeFilters.priceChange = checked;
-      activeFilters.promo = checked;
-      activeFilters.tentpole = checked;
+      activeFilters.holiday = checked;
+      activeFilters.special_event = checked;
+      activeFilters.special_event = checked;
 
       filterPriceChange.checked = checked;
       filterPromo.checked = checked;
@@ -380,7 +402,7 @@ function setupEventFilters() {
 
   if (filterPriceChange) {
     filterPriceChange.addEventListener('change', (e) => {
-      activeFilters.priceChange = e.target.checked;
+      activeFilters.holiday = e.target.checked;
       renderEventTimeline();
       renderEventTable();
     });
@@ -388,7 +410,7 @@ function setupEventFilters() {
 
   if (filterPromo) {
     filterPromo.addEventListener('change', (e) => {
-      activeFilters.promo = e.target.checked;
+      activeFilters.special_event = e.target.checked;
       renderEventTimeline();
       renderEventTable();
     });
@@ -396,7 +418,7 @@ function setupEventFilters() {
 
   if (filterTentpole) {
     filterTentpole.addEventListener('change', (e) => {
-      activeFilters.tentpole = e.target.checked;
+      activeFilters.special_event = e.target.checked;
       renderEventTimeline();
       renderEventTable();
     });
@@ -408,9 +430,10 @@ function setupEventFilters() {
  */
 function filterEvents() {
   return allEvents.filter(event => {
-    if (event.event_type === 'Price Change' && !activeFilters.priceChange) return false;
-    if (event.event_type.includes('Promo') && !activeFilters.promo) return false;
-    if (event.event_type === 'Tentpole' && !activeFilters.tentpole) return false;
+    if (event.event_type === 'holiday' && !activeFilters.holiday) return false;
+    if (event.event_type === 'special_event' && !activeFilters.special_event) return false;
+    if (event.event_type === 'school_break' && !activeFilters.school_break) return false;
+    if (event.event_type === 'weather' && !activeFilters.weather) return false;
     return true;
   });
 }

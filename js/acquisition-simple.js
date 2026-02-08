@@ -3,7 +3,8 @@
  * Interactive slider-based interface for immediate feedback
  */
 
-import { loadElasticityParams, loadWeeklyAggregated } from './data-loader.js';
+import { loadElasticityParams, loadDailyAggregated } from './data-loader.js';
+import { getAcquisitionCohorts } from './cohort-aggregator.js';
 
 // Chart instance
 let acquisitionChartSimple = null;
@@ -36,59 +37,74 @@ async function loadCohortData() {
 }
 
 /**
- * Load acquisition parameters from actual data sources
+ * Load acquisition parameters from actual Legoland visitor data
  */
 async function loadAcquisitionParams() {
   try {
+    console.log('Step 1: Loading elasticity params and daily data...');
     const [elasticityData, weeklyData] = await Promise.all([
       loadElasticityParams(),
-      loadWeeklyAggregated()
+      loadDailyAggregated()
     ]);
+    console.log('✓ Step 1 complete:', { elasticityData, weeklyDataLength: weeklyData.length });
 
-    // Calculate average monthly new subscribers by tier (from last 12 weeks)
-    // Convert weekly average to monthly (4.33 weeks per month)
-    const recentWeeks = weeklyData.slice(-12);
-    const avgNewSubs = {};
-
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierWeeks = recentWeeks.filter(w => w.tier === tier);
-      const avgWeekly = tierWeeks.reduce((sum, w) => sum + parseFloat(w.new_subscribers || 0), 0) / tierWeeks.length;
-      avgNewSubs[tier] = Math.round(avgWeekly * 4.33); // Convert to monthly
-    });
-
-    // Build params object from actual data
+    // Build params object from actual visitor cohorts
     acquisitionParams = {};
-    ['ad_supported', 'ad_free'].forEach(tier => {
-      const tierData = elasticityData.tiers[tier];
-      const totalNew = avgNewSubs[tier];
+
+    for (const tier of ['standard_pass', 'premium_pass', 'vip_pass']) {
+      console.log(`Step 2: Processing tier ${tier}...`);
+      const tierData = elasticityData[tier];
+
+      if (!tierData) {
+        console.error(`No tier data found for ${tier} in elasticityData`);
+        continue;
+      }
+
+      // Get actual acquisition cohorts from visitor data
+      console.log(`Step 3: Getting acquisition cohorts for ${tier}...`);
+      const cohorts = await getAcquisitionCohorts(tier);
+      console.log(`✓ Step 3 complete: Got ${cohorts ? cohorts.length : 0} cohorts`);
+
+      if (!cohorts || cohorts.length === 0) {
+        console.warn(`No acquisition cohorts found for ${tier}`);
+        continue;
+      }
+
+      // Calculate total visitors across all cohorts
+      const totalVisitors = cohorts.reduce((sum, c) => sum + c.size, 0);
+      console.log(`Total visitors for ${tier}: ${totalVisitors}`);
+
+      // Calculate weighted average elasticity
+      const weightedElasticity = cohorts.reduce((sum, c) => {
+        return sum + (c.elasticity * c.size / totalVisitors);
+      }, 0);
+
+      // Convert cohorts to segment structure for the model
+      const segments = {};
+      cohorts.forEach(cohort => {
+        segments[cohort.id] = {
+          name: cohort.name,
+          elasticity: cohort.elasticity,
+          size_pct: cohort.size / totalVisitors,
+          baseline_adds: cohort.size
+        };
+      });
 
       acquisitionParams[tier] = {
-        base_elasticity: tierData.base_elasticity,
+        base_elasticity: weightedElasticity,
         price: tierData.price_range.current,
-        segments: {
-          new_0_3mo: {
-            elasticity: tierData.segments.new_0_3mo.elasticity,
-            size_pct: tierData.segments.new_0_3mo.size_pct,
-            baseline_adds: Math.round(totalNew * tierData.segments.new_0_3mo.size_pct)
-          },
-          tenured_3_12mo: {
-            elasticity: tierData.segments.tenured_3_12mo.elasticity,
-            size_pct: tierData.segments.tenured_3_12mo.size_pct,
-            baseline_adds: Math.round(totalNew * tierData.segments.tenured_3_12mo.size_pct)
-          },
-          tenured_12plus: {
-            elasticity: tierData.segments.tenured_12plus.elasticity,
-            size_pct: tierData.segments.tenured_12plus.size_pct,
-            baseline_adds: Math.round(totalNew * tierData.segments.tenured_12plus.size_pct)
-          }
-        }
+        segments: segments,
+        cohorts: cohorts // Store full cohort data
       };
-    });
 
-    console.log('Acquisition parameters loaded from actual data:', acquisitionParams);
+      console.log(`✓ Loaded ${cohorts.length} acquisition cohorts for ${tier}:`, cohorts);
+    }
+
+    console.log('✓ Acquisition parameters loaded from actual visitor data:', acquisitionParams);
     return acquisitionParams;
   } catch (error) {
-    console.error('Error loading acquisition parameters:', error);
+    console.error('❌ Error loading acquisition parameters:', error);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 }
@@ -104,23 +120,10 @@ async function initAcquisitionSimple() {
     await loadAcquisitionParams();
     await loadCohortData();
 
-    // Apply initial cohort elasticity (before first chart update)
-    const cohortSelect = document.getElementById('acq-cohort-select');
-    const tierSelect = document.getElementById('acq-tier-select');
-    if (cohortSelect && cohortData && tierSelect) {
-      const selectedCohort = cohortSelect.value;
-      if (cohortData[selectedCohort]) {
-        const cohort = cohortData[selectedCohort];
-        const tier = tierSelect.value;
-        if (acquisitionParams[tier]) {
-          acquisitionParams[tier].base_elasticity = cohort.acquisition_elasticity;
-          acquisitionParams[tier].segments.new_0_3mo.elasticity = cohort.acquisition_elasticity;
-          acquisitionParams[tier].segments.tenured_3_12mo.elasticity = cohort.acquisition_elasticity;
-          acquisitionParams[tier].segments.tenured_12plus.elasticity = cohort.acquisition_elasticity;
-          console.log(`✓ Applied initial cohort "${selectedCohort}" elasticity: ${cohort.acquisition_elasticity.toFixed(2)}`);
-        }
-      }
-    }
+    // Note: We're now using real visitor data with actual elasticity values,
+    // so we don't need to apply cohort overrides from cohort_coefficients.json
+    // The elasticity values are already loaded from segment_elasticity.json
+    console.log('✓ Using real elasticity values from visitor data');
 
     // Create chart
     createAcquisitionChartSimple();
@@ -132,13 +135,21 @@ async function initAcquisitionSimple() {
     updateAcquisitionModel();
   } catch (error) {
     console.error('Failed to initialize acquisition model:', error);
-    // Show error to user
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name
+    });
+
+    // Show detailed error to user
     const container = document.getElementById('step-3-acquisition-container');
     if (container) {
       container.innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle me-2"></i>
-          Failed to load acquisition model data. Please refresh the page.
+          <strong>Failed to load acquisition model data</strong><br>
+          <small>Error: ${error.message}</small><br>
+          <small class="text-muted">Check browser console for details (F12)</small>
         </div>
       `;
     }
@@ -206,19 +217,20 @@ function createAcquisitionChartSimple() {
     }
   };
 
-  // Use loaded baseline data or fallback to placeholder values
-  const initialData = acquisitionParams && acquisitionParams.ad_supported
-    ? [
-        acquisitionParams.ad_supported.segments.new_0_3mo.baseline_adds,
-        acquisitionParams.ad_supported.segments.tenured_3_12mo.baseline_adds,
-        acquisitionParams.ad_supported.segments.tenured_12plus.baseline_adds
-      ]
-    : [1000, 1400, 1600];
+  // Use loaded baseline data from actual cohorts or fallback to placeholder values
+  let initialData = [1000, 1400, 1600, 2000, 3000]; // Default placeholder
+  let initialLabels = ['Cohort 1', 'Cohort 2', 'Cohort 3', 'Cohort 4', 'Cohort 5'];
+
+  if (acquisitionParams && acquisitionParams.standard_pass && acquisitionParams.standard_pass.cohorts) {
+    const cohorts = acquisitionParams.standard_pass.cohorts;
+    initialData = cohorts.map(c => c.size);
+    initialLabels = cohorts.map(c => c.name);
+  }
 
   acquisitionChartSimple = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['0–3 months', '3–12 months', '12+ months'],
+      labels: initialLabels,
       datasets: [
         {
           label: 'Baseline',
@@ -239,7 +251,7 @@ function createAcquisitionChartSimple() {
         },
         {
           label: 'Revenue Impact',
-          data: [0, 0, 0],
+          data: Array(initialData.length).fill(0),
           backgroundColor: 'rgba(251, 191, 36, 0.5)',
           borderColor: 'rgba(251, 191, 36, 1)',
           borderWidth: 2,
@@ -353,17 +365,22 @@ function setupAcquisitionInteractivity() {
     const tier = tierSelect.value;
     const params = acquisitionParams[tier];
 
-    // Update slider range based on tier
-    if (tier === 'ad_free') {
-      priceSlider.min = 6.99;
-      priceSlider.max = 12.99;
+    if (params) {
+      // Update price slider range dynamically based on tier's current price
+      priceSlider.min = Math.round(params.price * 0.6);  // 40% discount
+      priceSlider.max = Math.round(params.price * 1.6);  // 60% increase
       priceSlider.value = params.price;
-      priceSlider.step = 0.5;
-    } else {
-      priceSlider.min = 3.99;
-      priceSlider.max = 9.99;
-      priceSlider.value = params.price;
-      priceSlider.step = 0.5;
+      priceSlider.step = 5;
+
+      // Update slider labels
+      const sliderLabels = priceSlider.parentElement.querySelectorAll('.small.text-muted span');
+      if (sliderLabels.length === 2) {
+        sliderLabels[0].textContent = '$' + priceSlider.min;
+        sliderLabels[1].textContent = '$' + priceSlider.max;
+      }
+
+      // Update tier selector labels with actual prices
+      updateTierLabels();
     }
 
     updateAcquisitionModel();
@@ -380,7 +397,7 @@ function setupAcquisitionInteractivity() {
     });
   }
 
-  // Cohort selection change
+  // Cohort selection change (optional feature - applies cohort multipliers)
   if (cohortSelect && cohortData) {
     cohortSelect.addEventListener('change', () => {
       const selectedCohort = cohortSelect.value;
@@ -390,19 +407,38 @@ function setupAcquisitionInteractivity() {
         const cohort = cohortData[selectedCohort];
         const tier = tierSelect.value;
 
-        // Update elasticity from cohort profile
+        // Update base elasticity from cohort profile
         if (acquisitionParams[tier]) {
           acquisitionParams[tier].base_elasticity = cohort.acquisition_elasticity;
-          // CRITICAL FIX: Also update segment-level elasticities
-          acquisitionParams[tier].segments.new_0_3mo.elasticity = cohort.acquisition_elasticity;
-          acquisitionParams[tier].segments.tenured_3_12mo.elasticity = cohort.acquisition_elasticity;
-          acquisitionParams[tier].segments.tenured_12plus.elasticity = cohort.acquisition_elasticity;
-          console.log(`  ✓ Acquisition elasticity: ${cohort.acquisition_elasticity.toFixed(2)}`);
+          // Update all segment elasticities proportionally
+          if (acquisitionParams[tier].cohorts) {
+            acquisitionParams[tier].cohorts.forEach(c => {
+              c.elasticity = cohort.acquisition_elasticity;
+            });
+          }
+          console.log(`  ✓ Applied cohort "${selectedCohort}" elasticity: ${cohort.acquisition_elasticity.toFixed(2)}`);
         }
       }
 
       updateAcquisitionModel();
     });
+  }
+
+  // Initialize tier labels and price slider on first load
+  updateTierLabels();
+  const initialTier = tierSelect.value;
+  if (acquisitionParams[initialTier]) {
+    const params = acquisitionParams[initialTier];
+    priceSlider.min = Math.round(params.price * 0.6);
+    priceSlider.max = Math.round(params.price * 1.6);
+    priceSlider.value = params.price;
+
+    // Update slider labels
+    const sliderLabels = priceSlider.parentElement.querySelectorAll('.small.text-muted span');
+    if (sliderLabels.length === 2) {
+      sliderLabels[0].textContent = '$' + priceSlider.min;
+      sliderLabels[1].textContent = '$' + priceSlider.max;
+    }
   }
 }
 
@@ -455,28 +491,28 @@ function updateAcquisitionModel() {
   acqImpactEl.textContent = (acqImpact >= 0 ? '+' : '') + acqImpact.toFixed(1) + '%';
   acqImpactEl.className = 'metric-value ' + (acqImpact >= 0 ? 'text-success' : 'text-danger');
 
-  // Update segment table
-  const segments = params.segments;
-  const segNewImpact = segments.new_0_3mo.elasticity * (priceChangePct / 100) * 100;
-  const segMidImpact = segments.tenured_3_12mo.elasticity * (priceChangePct / 100) * 100;
-  const segLoyalImpact = segments.tenured_12plus.elasticity * (priceChangePct / 100) * 100;
+  // Update dynamic elasticity explanation
+  updateElasticityExplanation(elasticity);
 
-  updateSegmentCell('acq-seg-new', segNewImpact);
-  updateSegmentCell('acq-seg-mid', segMidImpact);
-  updateSegmentCell('acq-seg-loyal', segLoyalImpact);
+  // Update segment table with actual cohorts
+  if (params.cohorts) {
+    updateSegmentTable(params.cohorts, priceChangePct);
+  }
 
-  // Update chart
-  if (acquisitionChartSimple) {
-    const baselineData = [
-      segments.new_0_3mo.baseline_adds,
-      segments.tenured_3_12mo.baseline_adds,
-      segments.tenured_12plus.baseline_adds
-    ];
-    const projectedData = [
-      Math.round(segments.new_0_3mo.baseline_adds * (1 + segNewImpact / 100)),
-      Math.round(segments.tenured_3_12mo.baseline_adds * (1 + segMidImpact / 100)),
-      Math.round(segments.tenured_12plus.baseline_adds * (1 + segLoyalImpact / 100))
-    ];
+  // Update chart with actual cohorts
+  if (acquisitionChartSimple && params.cohorts) {
+    const cohorts = params.cohorts;
+    const segments = params.segments;
+
+    // Build arrays dynamically from cohorts
+    const labels = cohorts.map(c => c.name);
+    const baselineData = cohorts.map(c => c.size);
+
+    // Calculate projected visitors for each cohort
+    const projectedData = cohorts.map(c => {
+      const segmentImpact = c.elasticity * (priceChangePct / 100) * 100;
+      return Math.round(c.size * (1 + segmentImpact / 100));
+    });
 
     // Calculate confidence intervals (95% CI with ±15% standard error)
     const errorBars = projectedData.map(value => ({
@@ -484,11 +520,22 @@ function updateAcquisitionModel() {
       upper: value * (1 + Z_SCORE * STD_ERROR)
     }));
 
-    // Calculate revenue impact per segment based on lifetime value
-    // Each segment has different expected tenure (average months subscribed)
-    const tenureMonths = [1.5, 7.5, 18]; // Average months for 0-3mo, 3-12mo, 12+mo segments
-    const baselineRevenue = baselineData.map((subs, i) => subs * currentPrice * tenureMonths[i]);
-    const projectedRevenue = projectedData.map((subs, i) => subs * newPrice * tenureMonths[i]);
+    // Calculate revenue impact per cohort
+    // Estimate visit value based on cohort type
+    const visitMultiplier = {
+      'one_time': 1.0,
+      'occasional': 2.5,
+      'regular': 6.0,
+      'frequent': 12.0,
+      'season_pass': 20.0
+    };
+
+    const baselineRevenue = cohorts.map((c, i) =>
+      baselineData[i] * currentPrice * (visitMultiplier[c.id] || 1.0)
+    );
+    const projectedRevenue = cohorts.map((c, i) =>
+      projectedData[i] * newPrice * (visitMultiplier[c.id] || 1.0)
+    );
     const revenueImpact = projectedRevenue.map((rev, i) => Math.round(rev - baselineRevenue[i]));
 
     // Calculate totals for summary metrics
@@ -520,6 +567,9 @@ function updateAcquisitionModel() {
       totalRevenueEl.className = 'metric-value ' + (totalRevenueImpact >= 0 ? 'text-success' : 'text-danger');
     }
 
+    // Update labels with actual cohort names
+    acquisitionChartSimple.data.labels = labels;
+
     acquisitionChartSimple.data.datasets[0].data = baselineData;
     acquisitionChartSimple.data.datasets[1].data = projectedData;
     acquisitionChartSimple.data.datasets[1].errorBars = errorBars;
@@ -546,6 +596,83 @@ function updateSegmentCell(id, impact) {
     el.textContent = (impact >= 0 ? '+' : '') + impact.toFixed(1) + '%';
     el.style.color = impact >= 0 ? 'var(--primary-green)' : 'var(--primary-red)';
   }
+}
+
+/**
+ * Update tier selector labels with actual prices
+ */
+function updateTierLabels() {
+  const tierSelect = document.getElementById('acq-tier-select');
+  if (!tierSelect || !acquisitionParams) return;
+
+  const tierNames = {
+    'standard_pass': 'Standard Pass',
+    'premium_pass': 'Premium Pass',
+    'vip_pass': 'VIP Pass'
+  };
+
+  // Update each option's text with actual price
+  Array.from(tierSelect.options).forEach(option => {
+    const tier = option.value;
+    if (acquisitionParams[tier]) {
+      const price = acquisitionParams[tier].price;
+      option.textContent = `${tierNames[tier]} ($${price})`;
+    }
+  });
+}
+
+/**
+ * Update elasticity explanation with actual calculated value
+ */
+function updateElasticityExplanation(elasticity) {
+  const explanationEl = document.getElementById('elasticity-explanation');
+  if (explanationEl) {
+    const absElasticity = Math.abs(elasticity);
+    const direction = elasticity < 0 ? 'decrease' : 'increase';
+    explanationEl.innerHTML = `An elasticity of <strong>${elasticity.toFixed(2)}</strong> means a 1% price increase leads to a ${absElasticity.toFixed(1)}% ${direction} in new visitor acquisitions. ${elasticity < 0 ? 'Negative values indicate inverse relationship.' : 'Positive values indicate direct relationship.'}`;
+  }
+}
+
+/**
+ * Update segment elasticity table with actual cohort data
+ */
+function updateSegmentTable(cohorts, priceChangePct) {
+  const tableBody = document.querySelector('#acquisition-pane .table tbody');
+  if (!tableBody || !cohorts) return;
+
+  // Clear existing rows
+  tableBody.innerHTML = '';
+
+  // Add row for each cohort
+  cohorts.forEach(cohort => {
+    const impact = cohort.elasticity * (priceChangePct / 100) * 100;
+    const absElasticity = Math.abs(cohort.elasticity);
+
+    // Determine sensitivity level
+    let sensitivity, badgeClass;
+    if (absElasticity > 2.0) {
+      sensitivity = 'Very High';
+      badgeClass = 'bg-danger';
+    } else if (absElasticity > 1.5) {
+      sensitivity = 'High';
+      badgeClass = 'bg-warning';
+    } else if (absElasticity > 1.0) {
+      sensitivity = 'Medium';
+      badgeClass = 'bg-info';
+    } else {
+      sensitivity = 'Low';
+      badgeClass = 'bg-success';
+    }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><strong>${cohort.name}</strong></td>
+      <td>${cohort.elasticity.toFixed(2)}</td>
+      <td><span class="badge ${badgeClass}">${sensitivity}</span></td>
+      <td><strong class="${impact >= 0 ? 'text-success' : 'text-danger'}">${impact >= 0 ? '+' : ''}${impact.toFixed(1)}%</strong></td>
+    `;
+    tableBody.appendChild(row);
+  });
 }
 
 // Export for use in step-navigation.js

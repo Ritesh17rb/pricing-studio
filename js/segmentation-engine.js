@@ -47,7 +47,7 @@ class SegmentationEngine {
 
         // Segment descriptions and characteristics
         this.segmentDescriptions = {
-            // Axis 3: Acquisition Price Sensitivity
+            // Axis 1: Visit Frequency
             'habitual_streamers': {
                 label: 'Habitual Streamers',
                 description: 'Top quartile frequency & recency',
@@ -68,13 +68,13 @@ class SegmentationEngine {
                 description: 'Engagement spikes only during discounts',
                 elasticity_level: 'Extreme churn elasticity'
             },
-            'dormant_subscribers': {
-                label: 'Dormant Subscribers',
+            'dormant_visitors': {
+                label: 'Dormant Visitors',
                 description: 'No usage for X days',
                 elasticity_level: 'Price irrelevant; experience/content first'
             },
 
-            // Axis 2: Engagement & Churn Propensity
+            // Axis 2: Party Composition
             'ad_value_seekers': {
                 label: 'Ad-Value Seekers',
                 description: 'Ad-Lite plan, high ad completion, low ARPU',
@@ -101,7 +101,7 @@ class SegmentationEngine {
                 elasticity_level: 'Monetization expansion segment'
             },
 
-            // Axis 1: Monetization & Plan Type
+            // Axis 3: Price Sensitivity
             'platform_bundled_acquirers': {
                 label: 'Platform-Bundled Acquirers',
                 description: 'App store / bundle-driven',
@@ -138,7 +138,7 @@ class SegmentationEngine {
         try {
             const [elasticity, segments, kpis, cohorts] = await Promise.all([
                 d3.json('data/segment_elasticity.json'),
-                d3.csv('data/customer_segments.csv'),
+                d3.csv('data/visitor_segments.csv'),
                 d3.csv('data/segment_kpis.csv'),
                 d3.json('data/cohort_coefficients.json')
             ]);
@@ -313,34 +313,37 @@ class SegmentationEngine {
     aggregateKPIs(segments) {
         if (!segments || segments.length === 0) {
             return {
-                total_subscribers: 0,
-                weighted_churn: 0,
-                weighted_arpu: 0,
-                weighted_watch_hours: 0,
+                total_visitors: 0,
+                weighted_return_rate: 0,
+                weighted_arpv: 0,
+                weighted_visits_per_year: 0,
+                weighted_party_size: 0,
                 segment_count: 0
             };
         }
 
-        const totalSubs = segments.reduce((sum, s) => {
-            return sum + parseFloat(s.subscriber_count || 0);
+        const totalVisitors = segments.reduce((sum, s) => {
+            return sum + parseFloat(s.visitor_count || 0);
         }, 0);
 
-        if (totalSubs === 0) {
+        if (totalVisitors === 0) {
             return {
-                total_subscribers: 0,
-                weighted_churn: 0,
-                weighted_arpu: 0,
-                weighted_watch_hours: 0,
+                total_visitors: 0,
+                weighted_return_rate: 0,
+                weighted_arpv: 0,
+                weighted_visits_per_year: 0,
+                weighted_party_size: 0,
                 segment_count: segments.length
             };
         }
 
         return {
-            total_subscribers: Math.round(totalSubs),
-            weighted_churn: this.#weightedAvg(segments, 'avg_churn_rate', 'subscriber_count'),
-            weighted_arpu: this.#weightedAvg(segments, 'avg_arpu', 'subscriber_count'),
-            weighted_watch_hours: this.#weightedAvg(segments, 'avg_watch_hours', 'subscriber_count'),
-            weighted_cac: this.#weightedAvg(segments, 'avg_cac', 'subscriber_count'),
+            total_visitors: Math.round(totalVisitors),
+            weighted_return_rate: this.#weightedAvg(segments, 'avg_return_rate', 'visitor_count'),
+            weighted_arpv: this.#weightedAvg(segments, 'avg_arpv', 'visitor_count'),
+            weighted_visits_per_year: this.#weightedAvg(segments, 'avg_visits_per_year', 'visitor_count'),
+            weighted_party_size: this.#weightedAvg(segments, 'avg_party_size', 'visitor_count'),
+            weighted_cac: this.#weightedAvg(segments, 'avg_cac', 'visitor_count'),
             segment_count: segments.length
         };
     }
@@ -440,7 +443,7 @@ class SegmentationEngine {
     /**
      * Generate a single-line summary for a segment based on its composite key and metrics
      * @param {string} compositeKey - "acquisition|engagement|monetization"
-     * @param {Object} metrics - { subscriber_count, avg_churn_rate, avg_arpu }
+     * @param {Object} metrics - { visitor_count, avg_churn_rate, avg_arpu }
      * @returns {string} Single-line description
      */
     generateSegmentSummary(compositeKey, metrics) {
@@ -454,10 +457,10 @@ class SegmentationEngine {
         // Determine key characteristics
         const churnRate = parseFloat(metrics.avg_churn_rate) || 0;
         const arpu = parseFloat(metrics.avg_arpu) || 0;
-        const subscribers = parseInt(metrics.subscriber_count) || 0;
+        const visitors = parseInt(metrics.visitor_count) || 0;
 
         // Size descriptor
-        const sizeDesc = subscribers > 2000 ? 'Large' : subscribers > 1000 ? 'Medium-sized' : 'Small';
+        const sizeDesc = visitors > 2000 ? 'Large' : visitors > 1000 ? 'Medium-sized' : 'Small';
 
         // Churn risk level
         const churnRisk = churnRate > 0.18 ? 'very high churn risk' :
@@ -482,7 +485,7 @@ class SegmentationEngine {
             summary = `${sizeDesc} high-value segment with excellent retention - key revenue driver`;
         }
         // Priority 3: Large segments (volume plays)
-        else if (subscribers > 2000) {
+        else if (visitors > 2000) {
             summary = `Large ${valueTier} segment with ${churnRisk} - ${priceSensitivity}`;
         }
         // Priority 4: Small high-value segments (niche opportunities)
@@ -593,7 +596,7 @@ class SegmentationEngine {
                 arpu: 1.0,
                 watch_hours: 1.0,
                 cac: 1.0,
-                subscriber_count: 1.0,
+                visitor_count: 1.0,
                 acquisition_elasticity: 1.0,
                 migration_asymmetry: 1.0
             };
@@ -618,7 +621,7 @@ class SegmentationEngine {
             cac: Math.max(0.5, 1.5 - (cohort.migration_downgrade * 0.3)),
 
             // Subscriber count: don't adjust population distribution
-            subscriber_count: 1.0,
+            visitor_count: 1.0,
 
             // Acquisition Elasticity: ratio of acquisition elasticity (price sensitivity for NEW customers)
             acquisition_elasticity: Math.abs(cohort.acquisition_elasticity) / Math.abs(baseline.acquisition_elasticity),
@@ -700,8 +703,8 @@ class SegmentationEngine {
         if (adjusted.avg_cac !== undefined) {
             adjusted.avg_cac = parseFloat(adjusted.avg_cac) * multipliers.cac;
         }
-        if(adjusted.subscriber_count !== undefined && multipliers.subscriber_count !== undefined) {
-            adjusted.subscriber_count = Math.round(parseFloat(adjusted.subscriber_count) * multipliers.subscriber_count);
+        if(adjusted.visitor_count !== undefined && multipliers.visitor_count !== undefined) {
+            adjusted.visitor_count = Math.round(parseFloat(adjusted.visitor_count) * multipliers.visitor_count);
         }
 
         return adjusted;

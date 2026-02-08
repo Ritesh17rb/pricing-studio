@@ -102,3 +102,43 @@ export function showToast(message, type = 'info') {
 export function generateScenarioId() {
   return `scenario_custom_${Date.now()}`;
 }
+/**
+ * Show Bootstrap alert instead of window.alert()
+ * @param {string} message - Alert message
+ * @param {string} type - Alert type: 'success', 'danger', 'warning', 'info' (default: 'info')
+ * @param {number} duration - Auto-dismiss duration in ms (0 = no auto-dismiss, default: 5000)
+ */
+export function showAlert(message, type = 'info', duration = 5000) {
+  // Create alert container if it doesn't exist
+  let alertContainer = document.getElementById('alert-container');
+  if (!alertContainer) {
+    alertContainer = document.createElement('div');
+    alertContainer.id = 'alert-container';
+    alertContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    document.body.appendChild(alertContainer);
+  }
+
+  // Create alert element
+  const alertId = 'alert-' + Date.now();
+  const alertEl = document.createElement('div');
+  alertEl.id = alertId;
+  alertEl.className = `alert alert-${type} alert-dismissible fade show`;
+  alertEl.setAttribute('role', 'alert');
+  alertEl.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+
+  // Add to container
+  alertContainer.appendChild(alertEl);
+
+  // Auto-dismiss after duration
+  if (duration > 0) {
+    setTimeout(() => {
+      alertEl.classList.remove('show');
+      setTimeout(() => alertEl.remove(), 150);
+    }, duration);
+  }
+
+  return alertEl;
+}

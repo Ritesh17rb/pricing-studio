@@ -54,8 +54,8 @@ function calculateObjectiveScore(scenario, objective, constraints) {
 
   switch (objective) {
     case 'growth-max':
-      // Maximize subscriber growth
-      const subGrowth = delta.subscribers_pct || 0;
+      // Maximize visitor growth
+      const subGrowth = delta.visitors_pct || 0;
       const revenueGrowth = delta.revenue_pct || 0;
       const churnPenalty = Math.abs(delta.churn_rate || 0) * 50; // Penalize high churn
       return (subGrowth * 2) + revenueGrowth - churnPenalty;
@@ -98,7 +98,7 @@ function calculateRiskLevel(scenario) {
 
   // Risk factors
   const churnRisk = Math.abs(delta.churn_rate || 0);
-  const subDecline = (delta.subscribers_pct || 0) < -5;
+  const subDecline = (delta.visitors_pct || 0) < -5;
   const revenueDecline = (delta.revenue_pct || 0) < -10;
   const isNewTier = scenario.is_new_tier || false;
 
@@ -132,8 +132,8 @@ function validateConstraints(scenario, constraints) {
     return false;
   }
 
-  // Check subscriber floor
-  if (constraints.subscriber_floor && forecasted.activeSubscribers < constraints.subscriber_floor) {
+  // Check visitor floor
+  if (constraints.visitor_floor && forecasted.activeSubscribers < constraints.visitor_floor) {
     return false;
   }
 
@@ -148,7 +148,7 @@ function generateRationale(scenario, objective, isTop) {
   const config = scenario.scenario_config || {};
 
   const revChange = delta.revenue_pct || 0;
-  const subChange = scenario.delta.subscribers_pct || 0;
+  const subChange = scenario.delta.visitors_pct || 0;
   const churnChange = delta.churn_rate || 0;
   const arpuChange = delta.arpu_pct || 0;
 
@@ -163,7 +163,7 @@ function generateRationale(scenario, objective, isTop) {
   switch (objective) {
     case 'growth-max':
       if (subChange > 0) {
-        rationale.push(`✓ Grows subscribers by ${Math.abs(subChange).toFixed(1)}%`);
+        rationale.push(`✓ Grows visitors by ${Math.abs(subChange).toFixed(1)}%`);
       }
       if (revChange > 0) {
         rationale.push(`✓ Increases revenue by ${revChange.toFixed(1)}%`);
@@ -246,7 +246,7 @@ export function getObjectiveDisplayName(objective) {
  */
 export function getObjectiveDescription(objective) {
   const descriptions = {
-    'growth-max': 'Prioritizes subscriber growth while maintaining revenue health',
+    'growth-max': 'Prioritizes visitor growth while maintaining revenue health',
     'revenue-max': 'Maximizes revenue and ARPU with acceptable churn levels',
     'churn-capped': 'Protects retention by capping churn at acceptable threshold',
     'mix-targeted': 'Optimizes tier mix to increase Ad-Free share and ARPU'
@@ -266,7 +266,7 @@ export function suggestObjective(scenarios, currentMetrics) {
     return 'churn-capped'; // High churn - focus on retention
   } else if (avgRevGrowth < 0) {
     return 'revenue-max'; // Negative growth - focus on revenue
-  } else if (currentMetrics?.subscriber_growth < 0) {
+  } else if (currentMetrics?.visitor_growth < 0) {
     return 'growth-max'; // Subscriber decline - focus on acquisition
   } else {
     return 'revenue-max'; // Default to revenue optimization

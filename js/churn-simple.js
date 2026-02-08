@@ -4,6 +4,7 @@
  */
 
 import { loadElasticityParams } from './data-loader.js';
+import { getChurnCohorts } from './cohort-aggregator.js';
 
 // Chart instances
 let churnChartSimple = null;
@@ -38,30 +39,107 @@ async function loadCohortData() {
 }
 
 /**
- * Load churn parameters from actual data sources
+ * Load churn parameters from actual Legoland visitor data
  */
 async function loadChurnParams() {
   try {
+    console.log('Step 1: Loading elasticity params...');
     const elasticityData = await loadElasticityParams();
+    console.log('✓ Step 1 complete');
 
-    // Use ad_supported tier as default (UI allows tier selection via buttons)
-    const adSupportedChurn = elasticityData.churn_elasticity.ad_supported;
-    const adFreeChurn = elasticityData.churn_elasticity.ad_free;
-    churnParams = {
-      ad_supported: {
-        churn_elasticity: adSupportedChurn.churn_elasticity,
-        baseline_churn: adSupportedChurn.baseline_churn * 100, // Convert to percentage
-        price: elasticityData.tiers.ad_supported.price_range.current
-      },
-      ad_free: {
-        churn_elasticity: adFreeChurn.churn_elasticity,
-        baseline_churn: adFreeChurn.baseline_churn * 100,
-        price: elasticityData.tiers.ad_free.price_range.current
+    // Build params object from actual visitor cohorts
+    churnParams = {};
+
+    for (const tier of ['standard_pass', 'premium_pass', 'vip_pass']) {
+      try {
+        console.log(`Step 2: Processing tier ${tier}...`);
+        const tierData = elasticityData[tier];
+
+        if (!tierData) {
+          console.warn(`No tier data found for ${tier} in elasticityData`);
+          continue;
+        }
+
+        // Get actual churn cohorts from visitor data (engagement axis)
+        console.log(`Step 3: Getting churn cohorts for ${tier}...`);
+        const cohorts = await getChurnCohorts(tier);
+        console.log(`✓ Step 3 complete: Got ${cohorts ? cohorts.length : 0} cohorts`);
+
+      if (!cohorts || cohorts.length === 0) {
+        console.warn(`No churn cohorts found for ${tier}, using fallback values`);
+        // Use fallback values so the model can still work
+        churnParams[tier] = {
+          churn_elasticity: tier === 'standard_pass' ? 0.8 : tier === 'premium_pass' ? 0.6 : 0.4,
+          baseline_churn: tier === 'standard_pass' ? 25 : tier === 'premium_pass' ? 18 : 12,
+          price: tierData.price_range.current,
+          cohorts: []
+        };
+        continue;
       }
-    };
 
-    // Set default baseline churn (ad_supported)
-    baselineChurn = churnParams.ad_supported.baseline_churn;
+      // Calculate total visitors across all cohorts
+      const totalVisitors = cohorts.reduce((sum, c) => sum + c.size, 0);
+
+      // Calculate weighted average elasticity for churn axis
+      const weightedChurnElasticity = cohorts.reduce((sum, c) => {
+        return sum + (c.elasticity * c.size / totalVisitors);
+      }, 0);
+
+      // Estimate baseline churn from engagement elasticity
+      // Higher elasticity means more sensitive to price (higher churn)
+      // For theme parks: Standard ~25%, Premium ~18%, VIP ~12%
+      let estimatedBaselineChurn;
+      if (tier === 'standard_pass') {
+        estimatedBaselineChurn = 25;
+      } else if (tier === 'premium_pass') {
+        estimatedBaselineChurn = 18;
+      } else if (tier === 'vip_pass') {
+        estimatedBaselineChurn = 12;
+      } else {
+        estimatedBaselineChurn = 20;
+      }
+
+      churnParams[tier] = {
+        churn_elasticity: weightedChurnElasticity,
+        baseline_churn: estimatedBaselineChurn,
+        price: tierData.price_range.current,
+        cohorts: cohorts // Store full cohort data
+      };
+
+      console.log(`✓ Loaded ${cohorts.length} churn cohorts for ${tier}:`, {
+        visitors: totalVisitors,
+        avgElasticity: weightedChurnElasticity.toFixed(3),
+        baselineChurn: estimatedBaselineChurn + '%',
+        cohorts: cohorts
+      });
+      } catch (tierError) {
+        console.error(`❌ Error processing tier ${tier}:`, tierError);
+        console.error('Error details:', tierError.stack);
+        // Add fallback for this tier so model can still work
+        const fallbackTierData = elasticityData[tier];
+        churnParams[tier] = {
+          churn_elasticity: tier === 'standard_pass' ? 0.8 : tier === 'premium_pass' ? 0.6 : 0.4,
+          baseline_churn: tier === 'standard_pass' ? 25 : tier === 'premium_pass' ? 18 : 12,
+          price: fallbackTierData?.price_range?.current || (tier === 'standard_pass' ? 79 : tier === 'premium_pass' ? 139 : 249),
+          cohorts: []
+        };
+        console.warn(`⚠️ Using fallback values for ${tier}`);
+      }
+    }
+
+    // Set default baseline churn (standard_pass)
+    if (churnParams.standard_pass) {
+      baselineChurn = churnParams.standard_pass.baseline_churn;
+    } else if (churnParams.premium_pass) {
+      baselineChurn = churnParams.premium_pass.baseline_churn;
+    } else if (churnParams.vip_pass) {
+      baselineChurn = churnParams.vip_pass.baseline_churn;
+    } else {
+      baselineChurn = 25; // Fallback
+    }
+
+    console.log('✓ Baseline churn set to:', baselineChurn + '%');
+    console.log('✓ Available tiers:', Object.keys(churnParams));
 
     // Load time-lag distribution from cohort_coefficients.json
     try {
@@ -98,10 +176,11 @@ async function loadChurnParams() {
       };
     }
 
-    console.log('Churn parameters loaded from actual data:', churnParams);
+    console.log('✓ Churn parameters loaded from actual visitor data:', churnParams);
     return churnParams;
   } catch (error) {
-    console.error('Error loading churn parameters:', error);
+    console.error('❌ Error loading churn parameters:', error);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 }
@@ -127,14 +206,22 @@ async function initChurnSimple() {
     // Initial update
     updateChurnModel();
   } catch (error) {
-    console.error('Failed to initialize churn model:', error);
-    // Show error to user
+    console.error('❌ Failed to initialize churn model:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name
+    });
+
+    // Show detailed error to user
     const container = document.getElementById('step-4-churn-container');
     if (container) {
       container.innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle me-2"></i>
-          Failed to load churn model data. Please refresh the page.
+          <strong>Failed to load churn model data</strong><br>
+          <small>Error: ${error.message}</small><br>
+          <small class="text-muted">Check browser console for details (F12)</small>
         </div>
       `;
     }
@@ -156,12 +243,12 @@ function createChurnChartSimple() {
     churnChartSimple.destroy();
   }
 
-  // Use loaded baseline churn or fallback to ad_supported baseline
-  const initialBaseline = churnParams ? churnParams.ad_supported.baseline_churn : 4.2;
+  // Use loaded baseline churn or fallback to standard_pass baseline
+  const initialBaseline = churnParams ? churnParams.standard_pass.baseline_churn : 4.2;
 
   // Calculate initial projected data with default slider value ($1)
   const defaultPriceIncrease = 1; // Default slider value from HTML
-  const tierParams = churnParams ? churnParams.ad_supported : null;
+  const tierParams = churnParams ? churnParams.standard_pass : null;
   let initialProjectedData = [initialBaseline, initialBaseline, initialBaseline, initialBaseline, initialBaseline, initialBaseline];
 
   if (tierParams) {
@@ -274,7 +361,7 @@ function createSurvivalCurveChart() {
   }
 
   // Use loaded baseline churn to calculate initial retention curve
-  const initialBaseline = churnParams ? churnParams.ad_supported.baseline_churn : 4.2;
+  const initialBaseline = churnParams && churnParams.standard_pass ? churnParams.standard_pass.baseline_churn : 25;
   const baselineRetention = [
     100,
     100 - (initialBaseline * 0.25),
@@ -285,9 +372,9 @@ function createSurvivalCurveChart() {
     100 - (initialBaseline * 1.5)
   ];
 
-  // Calculate initial scenario retention with default slider value ($1)
-  const defaultPriceIncrease = 1;
-  const tierParams = churnParams ? churnParams.ad_supported : null;
+  // Calculate initial scenario retention with default slider value ($5)
+  const defaultPriceIncrease = 5;
+  const tierParams = churnParams && churnParams.standard_pass ? churnParams.standard_pass : null;
   let initialScenarioRetention = baselineRetention;
   let initialRevenueImpact = [0, 0, 0, 0, 0, 0, 0];
 
@@ -319,7 +406,7 @@ function createSurvivalCurveChart() {
     initialScenarioRetention = scenarioRetention;
 
     // Calculate initial revenue impact (cumulative over 24 weeks)
-    // Assume baseline of 100,000 current subscribers
+    // Assume baseline of 100,000 current visitors
     const baselineSubCount = 100000;
     const currentPrice = tierParams.price;
     const newPrice = currentPrice + defaultPriceIncrease;
@@ -477,11 +564,59 @@ function createSurvivalCurveChart() {
 }
 
 /**
+ * Populate tier buttons with actual pass prices
+ */
+function populateTierButtons() {
+  const container = document.getElementById('churn-tier-buttons');
+  if (!container || !churnParams) return;
+
+  const tierNames = {
+    'standard_pass': 'Standard Pass',
+    'premium_pass': 'Premium Pass',
+    'vip_pass': 'VIP Pass'
+  };
+
+  container.innerHTML = '';
+  let isFirst = true;
+
+  for (const tier of ['standard_pass', 'premium_pass', 'vip_pass']) {
+    if (churnParams[tier]) {
+      const price = churnParams[tier].price;
+      const btn = document.createElement('button');
+      btn.className = `btn btn-sm btn-outline-primary tier-btn${isFirst ? ' active' : ''}`;
+      btn.dataset.tier = tier;
+      btn.dataset.price = price;
+      btn.textContent = `${tierNames[tier]} ($${price})`;
+      container.appendChild(btn);
+      isFirst = false;
+    }
+  }
+}
+
+/**
+ * Populate cohort dropdown with engagement cohorts
+ */
+function populateCohortDropdown() {
+  const select = document.getElementById('churn-cohort-select');
+  if (!select || !churnParams) return;
+
+  // Keep the baseline option, add cohorts from data
+  const tier = 'standard_pass'; // Use standard as reference
+  if (churnParams[tier] && churnParams[tier].cohorts && churnParams[tier].cohorts.length > 0) {
+    churnParams[tier].cohorts.forEach(cohort => {
+      const option = document.createElement('option');
+      option.value = cohort.name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      option.textContent = cohort.name;
+      select.appendChild(option);
+    });
+  }
+}
+
+/**
  * Setup slider interactivity
  */
 function setupChurnInteractivity() {
   const priceSlider = document.getElementById('churn-price-slider');
-  const tierBtns = document.querySelectorAll('.tier-btn');
   const cohortSelect = document.getElementById('churn-cohort-select');
 
   if (!priceSlider || !churnParams) {
@@ -489,26 +624,28 @@ function setupChurnInteractivity() {
     return;
   }
 
-  let currentTier = 'ad_supported';
+  // Populate tier buttons and cohorts
+  populateTierButtons();
+  populateCohortDropdown();
+
+  let currentTier = 'standard_pass';
 
   // Price slider input
   priceSlider.addEventListener('input', () => updateChurnModel(currentTier));
 
-  // Tier button clicks
-  tierBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tierBtns.forEach(b => b.classList.remove('active'));
+  // Tier button clicks (using event delegation since buttons are dynamically created)
+  const tierButtonContainer = document.getElementById('churn-tier-buttons');
+  if (tierButtonContainer) {
+    tierButtonContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tier-btn');
+      if (!btn) return;
+
+      tierButtonContainer.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      // Map price to tier name
-      const price = parseFloat(btn.dataset.price);
-      if (price === 5.99) {
-        currentTier = 'ad_supported';
-      } else if (price === 9.99) {
-        currentTier = 'ad_free';
-      }
+      currentTier = btn.dataset.tier;
       updateChurnModel(currentTier);
     });
-  });
+  }
 
   // Cohort selection change
   if (cohortSelect && cohortData) {
@@ -548,7 +685,7 @@ function setupChurnInteractivity() {
 /**
  * Update the churn model based on current inputs
  */
-function updateChurnModel(currentTier = 'ad_supported') {
+function updateChurnModel(currentTier = 'standard_pass') {
   const priceSlider = document.getElementById('churn-price-slider');
   if (!priceSlider || !churnParams) {
     console.warn('⚠️ updateChurnModel early return:', { priceSlider: !!priceSlider, churnParams: !!churnParams });
@@ -577,6 +714,12 @@ function updateChurnModel(currentTier = 'ad_supported') {
   // Update displays
   document.getElementById('churn-increase-display').textContent = '+$' + priceIncrease.toFixed(2);
   document.getElementById('churn-pct-change').textContent = '+' + priceChangePct.toFixed(1) + '%';
+
+  // Update baseline churn rate display
+  const baselineRateEl = document.getElementById('churn-baseline-rate');
+  if (baselineRateEl && tierParams) {
+    baselineRateEl.textContent = tierParams.baseline_churn.toFixed(1) + '%';
+  }
 
   // Calculate total churn impact using actual churn elasticity
   // Formula: churn_change = baseline_churn × churn_elasticity × (price_change_pct / 100)
@@ -668,7 +811,7 @@ function updateChurnModel(currentTier = 'ad_supported') {
     let baselineRetention = [100];
     let currentRetention = 100;
     for (let i = 0; i < 6; i++) {
-      // Each period, lose (tierBaseline/100) of remaining subscribers
+      // Each period, lose (tierBaseline/100) of remaining visitors
       currentRetention = currentRetention * (1 - tierBaseline / 100);
       baselineRetention.push(currentRetention);
     }
@@ -678,7 +821,7 @@ function updateChurnModel(currentTier = 'ad_supported') {
     let scenarioRetention = [100];
     currentRetention = 100;
     for (let i = 0; i < 6; i++) {
-      // Each period, lose (churnRates[i]/100) of remaining subscribers
+      // Each period, lose (churnRates[i]/100) of remaining visitors
       currentRetention = currentRetention * (1 - churnRates[i] / 100);
       scenarioRetention.push(currentRetention);
     }
@@ -689,7 +832,7 @@ function updateChurnModel(currentTier = 'ad_supported') {
     });
 
     // Calculate revenue impact over time (cumulative over 24 weeks)
-    // Assume baseline of 100,000 current subscribers
+    // Assume baseline of 100,000 current visitors
     const baselineSubCount = 100000;
     const currentTierPrice = tierParams.price;
     const newPrice = currentTierPrice + priceIncrease;
@@ -699,7 +842,7 @@ function updateChurnModel(currentTier = 'ad_supported') {
 
     // Calculate period-by-period revenue (each period is 4 weeks)
     for (let i = 0; i < baselineRetention.length - 1; i++) {
-      // Average subscriber count during this 4-week period
+      // Average visitor count during this 4-week period
       const baselineSubsAvg = baselineSubCount * ((baselineRetention[i] + baselineRetention[i+1]) / 2) / 100;
       const scenarioSubsAvg = baselineSubCount * ((scenarioRetention[i] + scenarioRetention[i+1]) / 2) / 100;
 

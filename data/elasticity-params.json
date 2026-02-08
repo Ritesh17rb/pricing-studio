@@ -1,289 +1,194 @@
 {
-  "metadata": {
-    "generated_date": "2026-01-16",
-    "version": "3.0",
-    "description": "Price elasticity parameters derived from streaming industry analysis and academic research",
-    "estimation_method": "Industry analysis of publicly available pricing data, earnings disclosures, and academic research on streaming price sensitivity (2022-2024)",
-    "data_source": "Composite analysis of: (1) Public earnings data from major streaming services, (2) Academic research - Journal of Media Economics, Journal of Marketing Research, (3) Industry analyst reports on streaming price sensitivity, (4) Competitive market analysis of tier-based pricing",
-    "real_world_validation": "Values reflect observed price-response patterns from actual market behavior: 20% price increases typically result in 32-38% subscriber decline for Ad-Lite tiers and 26-30% for ad-free tiers. These align with elasticity values of -1.8 to -2.0 and -1.4 to -1.6 respectively.",
-    "benchmark_sources": [
-      "Public earnings disclosures (2022-2024): Subscriber counts and pricing changes from major streaming platforms",
-      "Academic research: Meta-analysis of 15+ streaming price changes showing -1.7 to -2.1 average elasticity for Ad-Lite tiers",
-      "Industry analyst reports: MoffettNathanson, Ampere Analysis documenting -1.8 to -2.0 typical elasticity",
-      "Market analysis: Competitive tier analysis showing -1.4 to -1.6 for premium tiers"
-    ],
-    "confidence_level": 0.9,
-    "validation": "Values derived from real market observations and validated against economic theory. Representative of typical streaming industry price sensitivity patterns."
-  },
-  "tiers": {
-    "ad_supported": {
-      "base_elasticity": -1.9,
-      "confidence_interval": 0.25,
-      "std_error": 0.13,
-      "interpretation": "Elastic demand - 1% price increase leads to 1.9% decrease in quantity demanded",
-      "price_range": {
-        "min": 3.99,
-        "max": 7.99,
-        "current": 5.99
+  "standard_pass": {
+    "base_elasticity": -1.9,
+    "churn_elasticity": 0.8,
+    "acquisition_elasticity": -1.6,
+    "confidence_interval": 0.25,
+    "price_range": {
+      "min": 49,
+      "max": 129,
+      "current": 79
+    },
+    "segments": {
+      "new_0_3mo": {
+        "elasticity": -2.5,
+        "size_pct": 0.40
       },
-      "segments": {
-        "new_0_3mo": {
-          "elasticity": -2.5,
-          "confidence_interval": 0.4,
-          "size_pct": 0.25,
-          "description": "New subscribers (0-3 months tenure) - highly price sensitive"
-        },
-        "tenured_3_12mo": {
-          "elasticity": -1.9,
-          "confidence_interval": 0.3,
-          "size_pct": 0.35,
-          "description": "Medium tenure (3-12 months) - moderately price sensitive"
-        },
-        "tenured_12plus": {
-          "elasticity": -1.6,
-          "confidence_interval": 0.25,
-          "size_pct": 0.4,
-          "description": "Long tenure (12+ months) - less price sensitive due to habit formation"
-        }
+      "tenured_3_12mo": {
+        "elasticity": -1.9,
+        "size_pct": 0.35
       },
-      "cohort_elasticity": {
-        "by_age": {
-          "18-24": -2.4,
-          "25-34": -2.2,
-          "35-44": -2.0,
-          "45-54": -1.9,
-          "55+": -1.7
-        },
-        "by_device": {
-          "mobile": -2.3,
-          "web": -2.1,
-          "smart_tv": -2.0,
-          "roku": -1.9,
-          "firetv": -1.9
-        },
-        "by_channel": {
-          "organic": -1.8,
-          "paid_search": -2.2,
-          "paid_social": -2.4,
-          "partner": -2.0,
-          "referral": -1.9
-        },
-        "by_promo_status": {
-          "full_price": -1.9,
-          "promotional": -2.6
-        }
+      "tenured_12plus": {
+        "elasticity": -1.6,
+        "size_pct": 0.25
       }
     },
-    "ad_free": {
-      "base_elasticity": -1.5,
-      "confidence_interval": 0.2,
-      "std_error": 0.1,
-      "interpretation": "Elastic demand - 1% price increase leads to 1.5% decrease in quantity demanded",
-      "price_range": {
-        "min": 6.99,
-        "max": 11.99,
-        "current": 9.99
+    "cohort_elasticity": {
+      "by_party_size": {
+        "solo": -2.3,
+        "couple": -2.1,
+        "family_small": -1.9,
+        "family_large": -1.7,
+        "group": -1.6
       },
-      "segments": {
-        "new_0_3mo": {
-          "elasticity": -1.8,
-          "confidence_interval": 0.3,
-          "size_pct": 0.2,
-          "description": "New subscribers (0-3 months tenure) - moderately price sensitive"
-        },
-        "tenured_3_12mo": {
-          "elasticity": -1.5,
-          "confidence_interval": 0.2,
-          "size_pct": 0.35,
-          "description": "Medium tenure (3-12 months) - standard price sensitivity"
-        },
-        "tenured_12plus": {
-          "elasticity": -1.2,
-          "confidence_interval": 0.15,
-          "size_pct": 0.45,
-          "description": "Long tenure (12+ months) - less price sensitive, high perceived value"
-        }
+      "by_age": {
+        "18-24": -2.4,
+        "25-34": -2.0,
+        "35-44": -1.9,
+        "45-54": -1.8,
+        "55+": -1.7
       },
-      "cohort_elasticity": {
-        "by_age": {
-          "18-24": -1.7,
-          "25-34": -1.6,
-          "35-44": -1.5,
-          "45-54": -1.4,
-          "55+": -1.3
-        },
-        "by_device": {
-          "mobile": -1.6,
-          "web": -1.5,
-          "smart_tv": -1.4,
-          "roku": -1.4,
-          "firetv": -1.5
-        },
-        "by_channel": {
-          "organic": -1.3,
-          "paid_search": -1.6,
-          "paid_social": -1.7,
-          "partner": -1.5,
-          "referral": -1.4
-        },
-        "by_promo_status": {
-          "full_price": -1.4,
-          "promotional": -1.9
-        }
-      }
-    }
-  },
-  "cross_elasticity": {
-    "description": "Cross-price elasticity measuring how demand for one tier changes when price of another tier changes",
-    "ad_supported_to_ad_free": 0.3,
-    "ad_free_to_ad_supported": -0.2,
-    "interpretation": {
-      "positive": "Substitute goods - price increase in one tier increases demand for another",
-      "negative": "Complementary effect - price increase in one tier decreases demand for another",
-      "magnitude": "Values between -0.5 and 0.5 indicate weak to moderate cross-price effects"
-    }
-  },
-  "promotional_elasticity": {
-    "description": "Elasticity specific to promotional pricing vs regular price changes",
-    "ad_supported": {
-      "short_term_promo_3mo": -2.9,
-      "long_term_promo_6mo": -2.5,
-      "interpretation": "Promotions drive higher immediate response than permanent price changes"
-    },
-    "ad_free": {
-      "short_term_promo_3mo": -2.2,
-      "long_term_promo_6mo": -1.9,
-      "interpretation": "Ad-free tier less responsive to promotions than Ad-Lite"
-    }
-  },
-  "time_horizon_adjustments": {
-    "description": "Elasticity varies by time horizon - immediate vs long-term effects",
-    "short_term_1_3mo": {
-      "multiplier": 1.2,
-      "description": "Immediate reaction is 20% more elastic than base"
-    },
-    "medium_term_3_12mo": {
-      "multiplier": 1.0,
-      "description": "Base elasticity applies to medium-term horizon"
-    },
-    "long_term_12plus": {
-      "multiplier": 0.8,
-      "description": "Long-term elasticity is 20% less elastic due to adaptation and habit"
-    }
-  },
-  "external_factor_adjustments": {
-    "description": "How external factors modify price elasticity",
-    "macroeconomic": {
-      "high_inflation": {
-        "elasticity_multiplier": 1.15,
-        "description": "During high inflation, consumers are 15% more price sensitive"
+      "by_booking_channel": {
+        "online": -1.8,
+        "mobile_app": -2.0,
+        "on_site": -1.6,
+        "travel_agent": -1.5,
+        "partner": -1.7
       },
-      "high_unemployment": {
-        "elasticity_multiplier": 1.25,
-        "description": "During high unemployment, consumers are 25% more price sensitive"
-      },
-      "low_consumer_sentiment": {
-        "elasticity_multiplier": 1.1,
-        "description": "During low sentiment, consumers are 10% more price sensitive"
+      "by_season": {
+        "peak_summer": -1.5,
+        "shoulder": -1.9,
+        "off_peak": -2.2
       }
     },
-    "competitive": {
-      "competitor_price_increase": {
-        "elasticity_multiplier": 0.85,
-        "description": "When competitors raise prices, service elasticity decreases (less sensitive)"
+    "cross_elasticity": {
+      "to_premium_pass": 0.25,
+      "to_vip_pass": 0.08
+    },
+    "promotional_elasticity": {
+      "short_term_3mo": -2.9,
+      "long_term_6mo": -2.5
+    },
+    "time_horizon_adjustment": {
+      "short_term_1_3mo": 1.2,
+      "medium_term_3_12mo": 1.0,
+      "long_term_12plus": 0.8
+    },
+    "external_factors": {
+      "high_inflation": 1.15,
+      "high_unemployment": 1.25,
+      "competitor_price_increase": 0.85,
+      "competitor_price_decrease": 1.2,
+      "new_attraction_opening": 0.9,
+      "bad_weather_forecast": 1.3
+    }
+  },
+  "premium_pass": {
+    "base_elasticity": -1.5,
+    "churn_elasticity": 0.6,
+    "acquisition_elasticity": -1.3,
+    "confidence_interval": 0.2,
+    "price_range": {
+      "min": 99,
+      "max": 199,
+      "current": 139
+    },
+    "segments": {
+      "new_0_3mo": {
+        "elasticity": -1.8,
+        "size_pct": 0.35
       },
-      "competitor_price_decrease": {
-        "elasticity_multiplier": 1.2,
-        "description": "When competitors lower prices, service elasticity increases (more sensitive)"
+      "tenured_3_12mo": {
+        "elasticity": -1.5,
+        "size_pct": 0.40
       },
-      "major_competitor_content_release": {
-        "elasticity_multiplier": 1.15,
-        "description": "Major competitor content releases make service subscribers more price sensitive"
+      "tenured_12plus": {
+        "elasticity": -1.2,
+        "size_pct": 0.25
       }
     },
-    "content": {
-      "major_content_release": {
-        "elasticity_multiplier": 0.9,
-        "description": "During major content releases, subscribers are 10% less price sensitive"
+    "cohort_elasticity": {
+      "by_party_size": {
+        "solo": -1.7,
+        "couple": -1.6,
+        "family_small": -1.5,
+        "family_large": -1.3,
+        "group": -1.2
       },
-      "content_drought": {
-        "elasticity_multiplier": 1.2,
-        "description": "During content droughts, subscribers are 20% more price sensitive"
+      "by_age": {
+        "18-24": -1.7,
+        "25-34": -1.6,
+        "35-44": -1.5,
+        "45-54": -1.4,
+        "55+": -1.3
+      },
+      "by_booking_channel": {
+        "online": -1.4,
+        "mobile_app": -1.6,
+        "on_site": -1.3,
+        "travel_agent": -1.2,
+        "partner": -1.3
+      },
+      "by_season": {
+        "peak_summer": -1.2,
+        "shoulder": -1.5,
+        "off_peak": -1.7
       }
+    },
+    "cross_elasticity": {
+      "to_standard_pass": -0.15,
+      "to_vip_pass": 0.3
+    },
+    "promotional_elasticity": {
+      "short_term_3mo": -2.2,
+      "long_term_6mo": -1.9
     }
   },
-  "willingness_to_pay": {
-    "description": "Distribution of willingness to pay (WTP) by tier",
-    "ad_supported": {
-      "mean": 6.5,
-      "median": 6.2,
-      "std_dev": 1.8,
-      "percentiles": {
-        "p10": 4.0,
-        "p25": 5.2,
-        "p50": 6.2,
-        "p75": 7.5,
-        "p90": 9.0
+  "vip_pass": {
+    "base_elasticity": -1.3,
+    "churn_elasticity": 0.3,
+    "acquisition_elasticity": -1.8,
+    "confidence_interval": 0.18,
+    "price_range": {
+      "min": 199,
+      "max": 349,
+      "current": 249
+    },
+    "segments": {
+      "new_0_3mo": {
+        "elasticity": -1.5,
+        "size_pct": 0.30
       },
-      "interpretation": "50% of Ad-Lite subscribers willing to pay $6.20 or more"
-    },
-    "ad_free": {
-      "mean": 10.5,
-      "median": 10.0,
-      "std_dev": 2.5,
-      "percentiles": {
-        "p10": 7.0,
-        "p25": 8.5,
-        "p50": 10.0,
-        "p75": 12.0,
-        "p90": 14.5
+      "tenured_3_12mo": {
+        "elasticity": -1.3,
+        "size_pct": 0.40
       },
-      "interpretation": "50% of ad-free subscribers willing to pay $10.00 or more"
-    }
-  },
-  "churn_elasticity": {
-    "description": "How churn rate changes with price changes",
-    "ad_supported": {
-      "churn_elasticity": 0.8,
-      "baseline_churn": 0.042,
-      "interpretation": "1% price increase leads to 0.8% increase in churn rate"
+      "tenured_12plus": {
+        "elasticity": -0.9,
+        "size_pct": 0.30
+      }
     },
-    "ad_free": {
-      "churn_elasticity": 0.6,
-      "baseline_churn": 0.038,
-      "interpretation": "1% price increase leads to 0.6% increase in churn rate"
-    }
-  },
-  "acquisition_elasticity": {
-    "description": "How new subscriber acquisition changes with price changes",
-    "ad_supported": {
-      "acquisition_elasticity": -1.6,
-      "interpretation": "1% price increase leads to 1.6% decrease in new acquisitions"
+    "cohort_elasticity": {
+      "by_party_size": {
+        "solo": -1.5,
+        "couple": -1.4,
+        "family_small": -1.3,
+        "family_large": -1.1,
+        "group": -1.0
+      },
+      "by_age": {
+        "18-24": -1.6,
+        "25-34": -1.4,
+        "35-44": -1.3,
+        "45-54": -1.2,
+        "55+": -1.0
+      },
+      "by_booking_channel": {
+        "online": -1.2,
+        "mobile_app": -1.4,
+        "on_site": -1.1,
+        "travel_agent": -0.9,
+        "partner": -1.0
+      },
+      "by_season": {
+        "peak_summer": -1.0,
+        "shoulder": -1.3,
+        "off_peak": -1.5
+      }
     },
-    "ad_free": {
-      "acquisition_elasticity": -1.3,
-      "interpretation": "1% price increase leads to 1.3% decrease in new acquisitions"
+    "cross_elasticity": {
+      "to_premium_pass": -0.12,
+      "to_standard_pass": -0.05
     }
-  },
-  "notes": {
-    "estimation_approach": "Real industry benchmarks from publicly available data",
-    "methodology": "Elasticity values derived from analysis of publicly disclosed pricing changes and subscriber impacts at major streaming services (2022-2024), validated against academic research and industry analyst reports. Values represent typical market behavior patterns observed across the competitive streaming landscape.",
-    "benchmark_validation": "Values reflect actual market observations: 20% price increases consistently result in 32-38% subscriber decline for Ad-Lite tiers (-1.8 to -2.0 elasticity) and 26-30% for ad-free tiers (-1.4 to -1.6 elasticity). These patterns are documented in academic research (Journal of Media Economics, Journal of Marketing Research) and industry analyst reports (MoffettNathanson, Ampere Analysis).",
-    "data_sources": [
-      "Public earnings disclosures from major streaming platforms (2022-2024)",
-      "Academic research: Meta-analysis of streaming price sensitivity studies",
-      "Industry analyst reports: Competitive pricing analysis and subscriber impact studies",
-      "Market observations: Price change announcements and subsequent subscriber trends"
-    ],
-    "assumptions": [
-      "Elasticity estimates assume ceteris paribus (all else equal)",
-      "Cross-price elasticity assumes competitors maintain current pricing",
-      "Segment-level elasticity assumes homogeneity within segments",
-      "Time horizon adjustments based on behavioral economics research",
-      "Cohort differences (age, device, channel) based on observed streaming industry patterns"
-    ],
-    "confidence": "High confidence (0.9) - values derived from real market observations and validated against economic theory. Representative of typical streaming industry price sensitivity patterns.",
-    "use_case": "Suitable for POC simulation, scenario modeling, and pricing strategy exploration. Values represent realistic market behavior patterns without requiring proprietary data access.",
-    "update_frequency": "For POC purposes, review annually as industry pricing patterns evolve. For production use with company-specific data, recalculate from actual pricing experiments."
   }
 }

@@ -46,23 +46,24 @@ let conversationHistory = [];
 let dataContext = null;
 
 // Default system prompt template
-const DEFAULT_SYSTEM_PROMPT = `You are the Scenario Analysis Assistant for the Streaming Service Price Elasticity Dashboard.
+const DEFAULT_SYSTEM_PROMPT = `You are the Scenario Analysis Assistant for the Legoland Theme Park Pricing & Revenue Optimization Studio.
 
 **Your Role:**
-- Interpret scenario simulation results and provide business insights
-- Analyze visualizations and explain what they mean
-- Suggest optimal scenarios based on business goals
-- Compare multiple scenarios and highlight trade-offs
-- Help users understand price elasticity and its impact
+- Interpret scenario simulation results and provide business insights for theme park pricing
+- Analyze visualizations and explain visitor behavior patterns
+- Suggest optimal pricing scenarios based on business goals (revenue, attendance, visitor satisfaction)
+- Compare multiple scenarios and highlight trade-offs between pricing and attendance
+- Help users understand price elasticity and seasonal demand patterns
 
 **Current Business Context:**
-- Total Subscribers: {currentSubscribers}
-- Monthly Revenue: {currentRevenue}
-- Average Churn Rate: {currentChurn}
+- Total Daily Visitors: {currentSubscribers}
+- Daily Revenue: {currentRevenue}
+- Average Non-Return Rate: {currentChurn}
 
-**Price Elasticity by Tier:**
-- Ad-Lite ($5.99/mo): {elasticityAdSupported} (Most price-sensitive)
-- Ad-Free ($9.99/mo): {elasticityAdFree} (Moderately elastic)
+**Price Elasticity by Pass Type:**
+- Standard Pass ($79): {elasticityAdSupported} (Most price-sensitive - families and budget visitors)
+- Premium Pass ($139): {elasticityAdFree} (Moderately elastic - regular visitors)
+- VIP Pass ($249): {elasticityVIP} (Less elastic - premium experience seekers)
 
 **Available Scenarios:**
 {availableScenarios}
@@ -73,36 +74,44 @@ const DEFAULT_SYSTEM_PROMPT = `You are the Scenario Analysis Assistant for the S
 **Saved Scenarios for Comparison:**
 {savedScenarios}
 
-**Customer Segmentation:**
+**Visitor Segmentation:**
 {segmentSummary}
 
-**Available Segments for Targeting:**
+**Available Visitor Segments for Targeting:**
 {availableSegments}
 
 **Available Tools:**
 1. **interpret_scenario** - Analyze a scenario's results with detailed metrics and trade-offs
-2. **suggest_scenario** - Get scenario suggestions based on business goals (maximize_revenue, grow_subscribers, reduce_churn, maximize_arpu)
-3. **analyze_chart** - Explain what a specific visualization shows (demand_curve, tier_mix, forecast, heatmap)
+2. **suggest_scenario** - Get scenario suggestions based on business goals (maximize_revenue, grow_attendance, improve_retention, maximize_arpv, balance_mix)
+3. **analyze_chart** - Explain what a specific visualization shows (demand_curve, pass_mix, attendance_forecast, heatmap, seasonal_patterns)
 4. **compare_outcomes** - Deep comparison of 2 or more scenarios with trade-off analysis
 5. **create_scenario** - Generate a new custom scenario from parameters
-6. **query_segments** - Get detailed information about customer segments (filter by tier, size, churn risk, value)
+6. **query_segments** - Get detailed information about visitor segments (filter by pass_type, party_size, visit_frequency, price_sensitivity)
 
 **How to Use Tools:**
 - When users ask to interpret results: Use interpret_scenario with the scenario_id
 - When users ask "which scenario is best for X": Use suggest_scenario with the goal
 - When users ask about a chart: Use analyze_chart with the chart name
 - When users want to compare 2+ scenarios: Use compare_outcomes with array of scenario_ids
-- When users want to create new scenarios: Use create_scenario with parameters
-- When users ask about customer segments: Use query_segments with filters (tier, size, churn_risk, value)
+- When users want to create new pricing scenarios: Use create_scenario with parameters
+- When users ask about visitor segments: Use query_segments with filters (pass_type, party_composition, visit_frequency, price_sensitivity)
+
+**Theme Park Pricing Context:**
+- Consider seasonal demand patterns (peak summer, shoulder seasons, off-peak winter)
+- Factor in special events (holidays, new attraction openings, school breaks)
+- Account for party composition (solo, couples, families, groups) and their different price sensitivities
+- Balance revenue optimization with park capacity and visitor experience
+- Consider cross-tier migration (upgrades from Standard to Premium, downgrades due to price increases)
+- Promotional pricing should align with slow periods to boost attendance
 
 **Response Guidelines:**
-- Focus on scenario interpretation and business insights
-- Explain trade-offs clearly (revenue vs subscribers, short-term vs long-term)
-- Highlight risks and warnings from simulations
-- Use business-friendly language, avoid technical jargon
-- Provide actionable recommendations
+- Focus on scenario interpretation and actionable business insights for theme park operations
+- Explain trade-offs clearly (revenue vs attendance, pricing vs visitor satisfaction, short-term gains vs long-term loyalty)
+- Highlight risks and warnings from simulations (e.g., capacity constraints, seasonal impacts, cannibalization)
+- Use business-friendly language relevant to theme park industry
+- Provide actionable recommendations for pricing strategy
 - Format numbers with proper currency/percentage symbols
-- Cite elasticity values when explaining price sensitivity
+- Cite elasticity values when explaining visitor price sensitivity
 - When users save scenarios, you can compare them using the compare_outcomes tool
 - Saved scenarios represent different pricing strategies the user is evaluating
 
@@ -276,7 +285,7 @@ function buildSystemPrompt() {
   const savedScenariosText = savedScenarios.length > 0
     ? savedScenarios.map(s => {
         if (s.delta && s.delta.revenue_pct !== undefined) {
-          return `- ${s.scenario_id}: ${s.scenario_name} (Revenue ${s.delta.revenue_pct >= 0 ? '+' : ''}${s.delta.revenue_pct.toFixed(1)}%, Subscribers ${s.delta.subscribers_pct >= 0 ? '+' : ''}${s.delta.subscribers_pct.toFixed(1)}%)`;
+          return `- ${s.scenario_id}: ${s.scenario_name} (Revenue ${s.delta.revenue_pct >= 0 ? '+' : ''}${s.delta.revenue_pct.toFixed(1)}%, Subscribers ${s.delta.visitors_pct >= 0 ? '+' : ''}${s.delta.visitors_pct.toFixed(1)}%)`;
         } else {
           return `- ${s.scenario_id}: ${s.scenario_name}`;
         }
@@ -302,7 +311,7 @@ function buildSystemPrompt() {
 
         allSegments.forEach(seg => {
           tierCounts[seg.tier] = (tierCounts[seg.tier] || 0) + 1;
-          totalSubscribers += parseInt(seg.subscriber_count) || 0;
+          totalSubscribers += parseInt(seg.visitor_count) || 0;
           totalChurn += parseFloat(seg.avg_churn_rate) || 0;
           totalARPU += parseFloat(seg.avg_arpu) || 0;
         });
@@ -353,7 +362,7 @@ You can also target by behavioral axes:
     .replace('{elasticityAdSupported}', (businessContext.elasticityByTier?.ad_supported || -2.1).toString())
     .replace('{elasticityAdFree}', (businessContext.elasticityByTier?.ad_free || -1.9).toString())
     .replace('{availableScenarios}', allScenarios.slice(0, 8).map(s => `- ${s.id}: ${s.name}`).join('\n') || 'None loaded yet')
-    .replace('{currentSimulation}', currentSim && currentSim.delta ? `Active: "${currentSim.scenario_name}" - Revenue ${currentSim.delta.revenue_pct >= 0 ? '+' : ''}${currentSim.delta.revenue_pct.toFixed(1)}%, Subscribers ${currentSim.delta.subscribers_pct >= 0 ? '+' : ''}${currentSim.delta.subscribers_pct.toFixed(1)}%` : currentSim ? `Active: "${currentSim.scenario_name}"` : 'No scenario simulated yet')
+    .replace('{currentSimulation}', currentSim && currentSim.delta ? `Active: "${currentSim.scenario_name}" - Revenue ${currentSim.delta.revenue_pct >= 0 ? '+' : ''}${currentSim.delta.revenue_pct.toFixed(1)}%, Subscribers ${currentSim.delta.visitors_pct >= 0 ? '+' : ''}${currentSim.delta.visitors_pct.toFixed(1)}%` : currentSim ? `Active: "${currentSim.scenario_name}"` : 'No scenario simulated yet')
     .replace('{savedScenarios}', savedScenariosText)
     .replace('{segmentSummary}', segmentSummary)
     .replace('{availableSegments}', availableSegments);
@@ -393,7 +402,7 @@ function getToolDefinitions() {
           properties: {
             goal: {
               type: "string",
-              enum: ["maximize_revenue", "grow_subscribers", "reduce_churn", "maximize_arpu"],
+              enum: ["maximize_revenue", "grow_visitors", "reduce_churn", "maximize_arpu"],
               description: "The business goal to optimize for"
             }
           },
@@ -472,7 +481,7 @@ function getToolDefinitions() {
       type: "function",
       function: {
         name: "query_segments",
-        description: "Query customer segments with filters to get detailed segment information. Returns segment metrics like subscriber count, churn rate, ARPU, and elasticity.",
+        description: "Query customer segments with filters to get detailed segment information. Returns segment metrics like visitor count, churn rate, ARPU, and elasticity.",
         parameters: {
           type: "object",
           properties: {
@@ -484,7 +493,7 @@ function getToolDefinitions() {
             size: {
               type: "string",
               enum: ["small", "medium", "large", "all"],
-              description: "Filter by segment size based on subscriber count. Use 'all' to include all sizes."
+              description: "Filter by segment size based on visitor count. Use 'all' to include all sizes."
             },
             churn_risk: {
               type: "string",
@@ -803,7 +812,7 @@ async function querySegments(filters) {
 
   if (filters.size && filters.size !== 'all') {
     segments = segments.filter(seg => {
-      const count = parseInt(seg.subscriber_count) || 0;
+      const count = parseInt(seg.visitor_count) || 0;
       if (filters.size === 'small') return count < 1000;
       if (filters.size === 'medium') return count >= 1000 && count < 3000;
       if (filters.size === 'large') return count >= 3000;
@@ -840,7 +849,7 @@ async function querySegments(filters) {
     const elasticity = window.segmentEngine.getElasticity(seg.tier, seg.compositeKey);
     const churnRate = parseFloat(seg.avg_churn_rate) || 0;
     const arpu = parseFloat(seg.avg_arpu) || 0;
-    const subscriberCount = parseInt(seg.subscriber_count) || 0;
+    const visitorCount = parseInt(seg.visitor_count) || 0;
 
     return {
       composite_key: seg.compositeKey,
@@ -848,7 +857,7 @@ async function querySegments(filters) {
       acquisition: seg.acquisition,
       engagement: seg.engagement,
       monetization: seg.monetization,
-      subscriber_count: subscriberCount,
+      visitor_count: visitorCount,
       churn_rate: (churnRate * 100).toFixed(2) + '%',
       arpu: '$' + arpu.toFixed(2),
       elasticity: elasticity?.toFixed(2) || 'N/A',

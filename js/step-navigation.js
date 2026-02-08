@@ -150,34 +150,36 @@ function showStepContent(step) {
     case 2:
       // Data Explorer - Show data viewer
       const dataViewerSection = document.getElementById('data-viewer-section');
-      const dataViewerContentArea = document.getElementById('step-2-data-viewer-container-content');
-      if (dataViewerSection && dataViewerContentArea) {
+      const dataViewerContent = document.getElementById('step-2-data-viewer-container-content');
+      if (dataViewerSection && dataViewerContent) {
         dataViewerSection.style.display = 'block';
-        // Move data viewer into step 2 content area if not already there
-        if (dataViewerSection.parentElement !== dataViewerContentArea) {
-          dataViewerContentArea.appendChild(dataViewerSection);
+        // Only append if not already a child
+        if (dataViewerSection.parentElement !== dataViewerContent) {
+          dataViewerContent.appendChild(dataViewerSection);
         }
       }
       break;
     case 3:
       // Event Calendar
       const eventCalendarSection = document.getElementById('event-calendar-section');
-      const calendarContentArea = document.getElementById('step-8-calendar-container');
-      if (eventCalendarSection && calendarContentArea) {
+      const calendarContent = document.getElementById('step-8-calendar-container-content');
+      if (eventCalendarSection && calendarContent) {
         eventCalendarSection.style.display = 'block';
-        if (eventCalendarSection.parentElement !== calendarContentArea) {
-          calendarContentArea.appendChild(eventCalendarSection);
+        // Only append if not already a child
+        if (eventCalendarSection.parentElement !== calendarContent) {
+          calendarContent.appendChild(eventCalendarSection);
         }
       }
       break;
     case 4:
       // Customer Cohorts & Elasticity (segmentation only)
       const segmentationSection6 = document.getElementById('segmentation-section');
-      const segmentContentArea6 = document.getElementById('step-6-segmentation-container');
-      if (segmentationSection6 && segmentContentArea6) {
+      const segmentContent6 = document.getElementById('step-6-segmentation-container-content');
+      if (segmentationSection6 && segmentContent6) {
         segmentationSection6.style.display = 'block';
-        if (segmentationSection6.parentElement !== segmentContentArea6) {
-          segmentContentArea6.appendChild(segmentationSection6);
+        // Only append if not already a child
+        if (segmentationSection6.parentElement !== segmentContent6) {
+          segmentContent6.appendChild(segmentationSection6);
         }
 
         // CRITICAL FIX: Initialize segmentation on navigation (only once)
@@ -189,11 +191,11 @@ function showStepContent(step) {
                 stepInitialized[4] = true; // Mark as initialized
               } catch (error) {
                 console.error('Failed to initialize segmentation:', error);
-                showStepError(segmentContentArea6, 'Failed to load visitor cohort data. Please refresh the page.');
+                showStepError(segmentContent6, 'Failed to load visitor cohort data. Please refresh the page.');
               }
             }, 100);
           } else {
-            showStepError(segmentContentArea6, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
+            showStepError(segmentContent6, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
           }
         }
       }
@@ -201,11 +203,12 @@ function showStepContent(step) {
     case 5:
       // Segment Elasticity Comparison (analysis only)
       const segmentAnalysisSection7 = document.getElementById('segment-analysis-section');
-      const analysisContentArea7 = document.getElementById('step-7-analysis-container');
-      if (segmentAnalysisSection7 && analysisContentArea7) {
+      const analysisContent7 = document.getElementById('step-7-analysis-container-content');
+      if (segmentAnalysisSection7 && analysisContent7) {
         segmentAnalysisSection7.style.display = 'block';
-        if (segmentAnalysisSection7.parentElement !== analysisContentArea7) {
-          analysisContentArea7.appendChild(segmentAnalysisSection7);
+        // Only append if not already a child
+        if (segmentAnalysisSection7.parentElement !== analysisContent7) {
+          analysisContent7.appendChild(segmentAnalysisSection7);
         }
 
         // CRITICAL FIX: Initialize segment comparison on navigation (only once)
@@ -217,11 +220,11 @@ function showStepContent(step) {
                 stepInitialized[5] = true; // Mark as initialized
               } catch (error) {
                 console.error('Failed to initialize segment comparison:', error);
-                showStepError(analysisContentArea7, 'Failed to load segment comparison data. Please refresh the page.');
+                showStepError(analysisContent7, 'Failed to load segment comparison data. Please refresh the page.');
               }
             }, 100);
           } else {
-            showStepError(analysisContentArea7, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
+            showStepError(analysisContent7, 'Data is still loading. Please wait for Step 1 to complete, then try again.');
           }
         }
       }
@@ -269,11 +272,12 @@ function showStepContent(step) {
     case 9:
       // Chat & Advanced Tools
       const chatSection = document.getElementById('chat-section');
-      const chatContentArea = document.getElementById('step-9-chat-container-content');
-      if (chatSection && chatContentArea) {
+      const chatContent = document.getElementById('step-9-chat-container-content');
+      if (chatSection && chatContent) {
         chatSection.style.display = 'block';
-        if (chatSection.parentElement !== chatContentArea) {
-          chatContentArea.appendChild(chatSection);
+        // Only append if not already a child
+        if (chatSection.parentElement !== chatContent) {
+          chatContent.appendChild(chatSection);
         }
       }
       break;

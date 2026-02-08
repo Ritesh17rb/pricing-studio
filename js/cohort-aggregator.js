@@ -9,17 +9,22 @@
  */
 export async function getAcquisitionCohorts(tier) {
   try {
+    console.log(`[Cohort Aggregator] Loading data for tier: ${tier}`);
+
     // Load segment data
     const segmentKPIs = await loadSegmentKPIs();
-    const segmentElasticity = await loadSegmentElasticity();
+    console.log(`[Cohort Aggregator] Loaded ${segmentKPIs.length} segment KPIs`);
 
-    // Define acquisition segment types
+    const segmentElasticity = await loadSegmentElasticity();
+    console.log(`[Cohort Aggregator] Loaded segment elasticity data:`, Object.keys(segmentElasticity));
+
+    // Define acquisition segment types (visit frequency)
     const acquisitionSegments = [
-      'habitual_streamers',
-      'content_anchored_viewers',
-      'at_risk_lapsers',
-      'promo_only_users',
-      'dormant_subscribers'
+      'one_time',
+      'occasional',
+      'regular',
+      'frequent',
+      'season_pass'
     ];
 
     const cohorts = [];
@@ -34,8 +39,8 @@ export async function getAcquisitionCohorts(tier) {
 
       if (cohortSegments.length === 0) continue;
 
-      // Calculate cohort size (sum of subscriber counts)
-      const size = cohortSegments.reduce((sum, s) => sum + parseInt(s.subscriber_count), 0);
+      // Calculate cohort size (sum of visitor counts)
+      const size = cohortSegments.reduce((sum, s) => sum + parseInt(s.visitor_count), 0);
 
       // Calculate average elasticity for acquisition axis
       let elasticitySum = 0;
@@ -53,24 +58,27 @@ export async function getAcquisitionCohorts(tier) {
 
       // Friendly name mapping
       const nameMap = {
-        'habitual_streamers': 'Habitual Streamers',
-        'content_anchored_viewers': 'Content-Anchored Viewers',
-        'at_risk_lapsers': 'At-Risk Lapsers',
-        'promo_only_users': 'Promo-Only Users',
-        'dormant_subscribers': 'Dormant Subscribers'
+        'one_time': 'One-Time Visitors',
+        'occasional': 'Occasional Visitors',
+        'regular': 'Regular Visitors',
+        'frequent': 'Frequent Visitors',
+        'season_pass': 'Season Pass Holders'
       };
 
       cohorts.push({
+        id: segmentType,
         name: nameMap[segmentType] || segmentType,
         size: size,
         elasticity: avgElasticity
       });
     }
 
+    console.log(`[Cohort Aggregator] Returning ${cohorts.length} cohorts for ${tier}`);
     return cohorts;
   } catch (error) {
-    console.error('Error aggregating acquisition cohorts:', error);
-    return [];
+    console.error('[Cohort Aggregator] Error aggregating acquisition cohorts:', error);
+    console.error('[Cohort Aggregator] Error stack:', error.stack);
+    throw error; // Re-throw to propagate error
   }
 }
 
@@ -84,11 +92,11 @@ export async function getChurnCohorts(tier) {
     const segmentElasticity = await loadSegmentElasticity();
 
     const engagementSegments = [
-      'ad_value_seekers',
-      'ad_tolerant_upgraders',
-      'ad_free_loyalists',
-      'price_triggered_downgraders',
-      'tvod_inclined_buyers'
+      'solo',
+      'couple',
+      'family_small',
+      'family_large',
+      'group'
     ];
 
     const cohorts = [];
@@ -102,7 +110,7 @@ export async function getChurnCohorts(tier) {
 
       if (cohortSegments.length === 0) continue;
 
-      const size = cohortSegments.reduce((sum, s) => sum + parseInt(s.subscriber_count), 0);
+      const size = cohortSegments.reduce((sum, s) => sum + parseInt(s.visitor_count), 0);
 
       let elasticitySum = 0;
       let elasticityCount = 0;
@@ -118,11 +126,11 @@ export async function getChurnCohorts(tier) {
       const avgElasticity = elasticityCount > 0 ? elasticitySum / elasticityCount : -2.1;
 
       const nameMap = {
-        'ad_value_seekers': 'Ad-Value Seekers',
-        'ad_tolerant_upgraders': 'Ad-Tolerant Upgraders',
-        'ad_free_loyalists': 'Ad-Free Loyalists',
-        'price_triggered_downgraders': 'Price-Triggered Downgraders',
-        'tvod_inclined_buyers': 'TVOD-Inclined Buyers'
+        'solo': 'Solo Visitors',
+        'couple': 'Couples',
+        'family_small': 'Small Families',
+        'family_large': 'Large Families',
+        'group': 'Groups'
       };
 
       cohorts.push({

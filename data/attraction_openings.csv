@@ -1,0 +1,15 @@
+event_date,attraction_name,event_type,expected_impact,description
+2024-02-15,LEGO Ninjago World: The Ride 2.0,new_attraction,high,Upgraded interactive dark ride with 4D effects and enhanced storyline
+2024-04-01,Miniland USA West Coast Expansion,new_attraction,medium,New West Coast landmarks added to Miniland including Golden Gate Bridge and Hollywood
+2024-05-15,Brick-or-Treat Halloween Event (Seasonal),seasonal_event,high,"Annual Halloween-themed event with trick-or-treating, costume contests, and special shows"
+2024-06-01,Summer Water Park Expansion,new_attraction,high,New water slides and splash zone added to Duplo Splash Safari
+2024-07-15,LEGO City 4D Movie Theater,new_attraction,medium,New 4D movie experience featuring LEGO City Adventures
+2024-09-01,Heartlake City Friends Area (Renovation),renovation_closure,low,Temporary closure for major renovation and expansion - reopens Spring 2025
+2024-11-01,Holiday Bricktacular (Seasonal),seasonal_event,high,"Winter holiday event with snow play, Santa meet-and-greet, and LEGO tree lighting"
+2024-12-01,Castle Hill Winter Maintenance,renovation_closure,low,Annual winter maintenance and safety inspections - reopens mid-December
+2025-03-15,Heartlake City Friends Area Grand Reopening,new_attraction,high,"Fully renovated Friends-themed area with new rides, shows, and interactive experiences"
+2025-05-20,LEGO Masters Live Show,limited_time,high,Limited-time live show based on the TV series with celebrity builders
+2025-06-15,Imagination Zone Expansion,new_attraction,medium,Expanded free-build area with new LEGO brick stations and creative workshops
+2025-08-01,Pirate Shores Ride Upgrade,new_attraction,medium,Enhanced interactive water battle ride with new special effects
+2025-10-15,Brick-or-Treat Halloween Event (Seasonal),seasonal_event,high,Annual Halloween event returns with new activities and trick-or-treat stations
+2025-11-01,Holiday Bricktacular (Seasonal),seasonal_event,high,Winter holiday event with enhanced light displays and new shows

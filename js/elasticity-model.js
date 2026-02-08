@@ -9,7 +9,7 @@ import { loadElasticityParams } from './data-loader.js';
 
 /**
  * Calculate elasticity for a specific tier and segment
- * @param {string} tier - Tier name (ad_supported, ad_free)
+ * @param {string} tier - Tier name (standard_pass, premium_pass, vip_pass)
  * @param {string} segment - Segment name (optional)
  * @param {Object} options - Additional options {cohort, timeHorizon}
  * @returns {Promise<Object>} Elasticity object with value and confidence interval
@@ -17,41 +17,41 @@ import { loadElasticityParams } from './data-loader.js';
 export async function calculateElasticity(tier, segment = null, options = {}) {
   const params = await loadElasticityParams();
 
-  // Special handling for bundle tier
-  if (tier === 'bundle') {
-    // Bundles typically have better elasticity than individual tiers due to perceived value
-    // Use ad_free tier as base and apply bundle discount factor
-    console.log('Using bundle elasticity (based on ad_free with better price sensitivity)');
-    const bundleElasticity = -1.3; // Less elastic (more inelastic) than ad_free
-    const bundleCI = 0.15;
+  // Special handling for vip_pass tier
+  if (tier === 'vip_pass' && !params[tier]) {
+    // VIP pass typically has better elasticity than individual tiers due to perceived value
+    // Use premium_pass tier as base and apply VIP discount factor
+    console.log('Using vip_pass elasticity (based on premium_pass with better price sensitivity)');
+    const vipElasticity = -1.3; // Less elastic (more inelastic) than premium_pass
+    const vipCI = 0.18;
 
     // Apply time horizon adjustment if specified
-    let adjustedElasticity = bundleElasticity;
-    if (options.timeHorizon && params.time_horizon_adjustments[options.timeHorizon]) {
-      const multiplier = params.time_horizon_adjustments[options.timeHorizon].multiplier;
-      adjustedElasticity = bundleElasticity * multiplier;
+    let adjustedElasticity = vipElasticity;
+    if (options.timeHorizon && params.standard_pass?.time_horizon_adjustment?.[options.timeHorizon]) {
+      const multiplier = params.standard_pass.time_horizon_adjustment[options.timeHorizon];
+      adjustedElasticity = vipElasticity * multiplier;
     }
 
     return {
       elasticity: adjustedElasticity,
-      confidenceInterval: bundleCI,
-      lowerBound: adjustedElasticity - bundleCI,
-      upperBound: adjustedElasticity + bundleCI,
-      isBundle: true
+      confidenceInterval: vipCI,
+      lowerBound: adjustedElasticity - vipCI,
+      upperBound: adjustedElasticity + vipCI,
+      isVIP: true
     };
   }
 
-  if (!params.tiers[tier]) {
+  if (!params[tier]) {
     throw new Error(`Unknown tier: ${tier}`);
   }
 
-  let elasticity = params.tiers[tier].base_elasticity;
-  let confidenceInterval = params.tiers[tier].confidence_interval;
+  let elasticity = params[tier].base_elasticity;
+  let confidenceInterval = params[tier].confidence_interval;
 
   // Apply segment-level elasticity if specified
-  if (segment && params.tiers[tier].segments[segment]) {
-    elasticity = params.tiers[tier].segments[segment].elasticity;
-    confidenceInterval = params.tiers[tier].segments[segment].confidence_interval;
+  if (segment && params[tier].segments[segment]) {
+    elasticity = params[tier].segments[segment];
+    confidenceInterval = confidenceInterval; // Keep base CI
   }
 
   // Apply cohort adjustments if specified
@@ -59,14 +59,14 @@ export async function calculateElasticity(tier, segment = null, options = {}) {
     const cohortType = Object.keys(options.cohort)[0];
     const cohortValue = options.cohort[cohortType];
 
-    if (params.tiers[tier].cohort_elasticity?.[cohortType]?.[cohortValue]) {
-      elasticity = params.tiers[tier].cohort_elasticity[cohortType][cohortValue];
+    if (params[tier].cohort_elasticity?.[cohortType]?.[cohortValue]) {
+      elasticity = params[tier].cohort_elasticity[cohortType][cohortValue];
     }
   }
 
   // Apply time horizon adjustment
-  if (options.timeHorizon && params.time_horizon_adjustments[options.timeHorizon]) {
-    const multiplier = params.time_horizon_adjustments[options.timeHorizon].multiplier;
+  if (options.timeHorizon && params[tier].time_horizon_adjustment?.[options.timeHorizon]) {
+    const multiplier = params[tier].time_horizon_adjustment[options.timeHorizon];
     elasticity = elasticity * multiplier;
   }
 
@@ -84,12 +84,12 @@ export async function calculateElasticity(tier, segment = null, options = {}) {
  *
  * @param {number} currentPrice - Current price
  * @param {number} newPrice - New price
- * @param {number} baseSubscribers - Current subscriber count
+ * @param {number} baseVisitors - Current visitor count
  * @param {number} elasticity - Price elasticity coefficient
  * @returns {Object} Forecast object
  */
-export function forecastDemand(currentPrice, newPrice, baseSubscribers, elasticity) {
-  if (!currentPrice || !newPrice || !baseSubscribers || !elasticity) {
+export function forecastDemand(currentPrice, newPrice, baseVisitors, elasticity) {
+  if (!currentPrice || !newPrice || !baseVisitors || !elasticity) {
     throw new Error('Missing required parameters for demand forecast');
   }
 
@@ -97,15 +97,15 @@ export function forecastDemand(currentPrice, newPrice, baseSubscribers, elastici
   const priceRatio = newPrice / currentPrice;
 
   // Calculate demand using elasticity formula: Q = Q0 * (P1/P0)^elasticity
-  const forecastedSubscribers = baseSubscribers * Math.pow(priceRatio, elasticity);
+  const forecastedVisitors = baseVisitors * Math.pow(priceRatio, elasticity);
 
   // Calculate changes
-  const change = forecastedSubscribers - baseSubscribers;
-  const percentChange = (change / baseSubscribers) * 100;
+  const change = forecastedVisitors - baseVisitors;
+  const percentChange = (change / baseVisitors) * 100;
 
   return {
-    baseSubscribers,
-    forecastedSubscribers: Math.round(forecastedSubscribers),
+    baseVisitors,
+    forecastedVisitors: Math.round(forecastedVisitors),
     change: Math.round(change),
     percentChange,
     priceRatio,
@@ -133,7 +133,7 @@ export async function calculateWTP(tier) {
  * Uses cross-elasticity to estimate movement between tiers
  *
  * @param {Object} priceChanges - { tier: newPrice } mappings
- * @param {Object} currentDistribution - { tier: subscriberCount }
+ * @param {Object} currentDistribution - { tier: visitorCount }
  * @returns {Promise<Object>} Estimated new distribution
  */
 export async function estimateMigration(priceChanges, currentDistribution) {
@@ -177,88 +177,88 @@ export async function estimateMigration(priceChanges, currentDistribution) {
 }
 
 /**
- * Calculate churn elasticity (how churn rate changes with price)
+ * Calculate return rate elasticity (inverse of churn - how return rate changes with price)
  * @param {string} tier - Tier name
  * @param {number} priceChangePct - Price change percentage (e.g., 0.10 for 10% increase)
- * @param {number} baselineChurn - Current churn rate
- * @returns {Promise<Object>} Forecast churn
+ * @param {number} baselineReturnRate - Current return rate (inverse of churn)
+ * @returns {Promise<Object>} Forecast return rate
  */
-export async function forecastChurn(tier, priceChangePct, baselineChurn) {
+export async function forecastChurn(tier, priceChangePct, baselineReturnRate) {
   const params = await loadElasticityParams();
 
-  // Special handling for bundle tier
-  if (tier === 'bundle') {
-    // Bundles have lower churn sensitivity (better retention)
-    const bundleChurnElasticity = 0.3; // Lower than ad_free (0.5)
-    const churnChangePct = bundleChurnElasticity * priceChangePct;
-    const forecastedChurn = baselineChurn * (1 + churnChangePct);
+  // Special handling for vip_pass tier
+  if (tier === 'vip_pass') {
+    // VIP pass has lower return rate sensitivity (better retention)
+    const vipChurnElasticity = 0.3; // Lower than premium_pass
+    const returnRateChangePct = vipChurnElasticity * priceChangePct;
+    const forecastedReturnRate = baselineReturnRate * (1 + returnRateChangePct);
 
     return {
-      baselineChurn,
-      forecastedChurn,
-      change: forecastedChurn - baselineChurn,
-      changePercent: (churnChangePct * 100),
-      isBundle: true
+      baselineChurn: baselineReturnRate,
+      forecastedChurn: forecastedReturnRate,
+      change: forecastedReturnRate - baselineReturnRate,
+      changePercent: (returnRateChangePct * 100),
+      isVIP: true
     };
   }
 
-  if (!params.churn_elasticity[tier]) {
-    throw new Error(`Churn elasticity not available for tier: ${tier}`);
+  if (!params[tier]?.churn_elasticity) {
+    throw new Error(`Return rate elasticity not available for tier: ${tier}`);
   }
 
-  const churnElasticity = params.churn_elasticity[tier].churn_elasticity;
-  const churnChangePct = churnElasticity * priceChangePct;
+  const churnElasticity = params[tier].churn_elasticity;
+  const returnRateChangePct = churnElasticity * priceChangePct;
 
-  const forecastedChurn = baselineChurn * (1 + churnChangePct);
+  const forecastedReturnRate = baselineReturnRate * (1 + returnRateChangePct);
 
   return {
-    baselineChurn,
-    forecastedChurn,
-    change: forecastedChurn - baselineChurn,
-    changePercent: churnChangePct * 100
+    baselineChurn: baselineReturnRate,
+    forecastedChurn: forecastedReturnRate,
+    change: forecastedReturnRate - baselineReturnRate,
+    changePercent: returnRateChangePct * 100
   };
 }
 
 /**
- * Calculate acquisition elasticity (how new subscribers change with price)
+ * Calculate new visit elasticity (how new visitors change with price)
  * @param {string} tier - Tier name
  * @param {number} priceChangePct - Price change percentage
- * @param {number} baselineAcquisition - Current weekly new subscribers
- * @returns {Promise<Object>} Forecast acquisition
+ * @param {number} baselineNewVisits - Current daily new visitors
+ * @returns {Promise<Object>} Forecast new visits
  */
-export async function forecastAcquisition(tier, priceChangePct, baselineAcquisition) {
+export async function forecastAcquisition(tier, priceChangePct, baselineNewVisits) {
   const params = await loadElasticityParams();
 
-  // Special handling for bundle tier
-  if (tier === 'bundle') {
-    // Bundles have better acquisition response due to perceived value
-    // Despite lower price, bundles attract more customers
-    const bundleAcqElasticity = -1.8; // More responsive than individual tiers
-    const acqChangePct = bundleAcqElasticity * priceChangePct;
-    const forecastedAcquisition = baselineAcquisition * (1 + acqChangePct);
+  // Special handling for vip_pass tier
+  if (tier === 'vip_pass') {
+    // VIP pass has better acquisition response due to perceived value
+    // Despite higher price, VIP attracts experience-seeking customers
+    const vipAcqElasticity = -1.8; // More responsive than individual tiers
+    const acqChangePct = vipAcqElasticity * priceChangePct;
+    const forecastedNewVisits = baselineNewVisits * (1 + acqChangePct);
 
     return {
-      baselineAcquisition,
-      forecastedAcquisition: Math.round(forecastedAcquisition),
-      change: Math.round(forecastedAcquisition - baselineAcquisition),
+      baselineAcquisition: baselineNewVisits,
+      forecastedAcquisition: Math.round(forecastedNewVisits),
+      change: Math.round(forecastedNewVisits - baselineNewVisits),
       changePercent: acqChangePct * 100,
-      isBundle: true
+      isVIP: true
     };
   }
 
-  if (!params.acquisition_elasticity[tier]) {
-    throw new Error(`Acquisition elasticity not available for tier: ${tier}`);
+  if (!params[tier]?.acquisition_elasticity) {
+    throw new Error(`New visit elasticity not available for tier: ${tier}`);
   }
 
-  const acqElasticity = params.acquisition_elasticity[tier].acquisition_elasticity;
+  const acqElasticity = params[tier].acquisition_elasticity;
   const acqChangePct = acqElasticity * priceChangePct;
 
-  const forecastedAcquisition = baselineAcquisition * (1 + acqChangePct);
+  const forecastedNewVisits = baselineNewVisits * (1 + acqChangePct);
 
   return {
-    baselineAcquisition,
-    forecastedAcquisition: Math.round(forecastedAcquisition),
-    change: Math.round(forecastedAcquisition - baselineAcquisition),
+    baselineAcquisition: baselineNewVisits,
+    forecastedAcquisition: Math.round(forecastedNewVisits),
+    change: Math.round(forecastedNewVisits - baselineNewVisits),
     changePercent: acqChangePct * 100
   };
 }
@@ -270,8 +270,9 @@ export async function forecastAcquisition(tier, priceChangePct, baselineAcquisit
  */
 function getCurrentPriceForTier(tier) {
   const prices = {
-    ad_supported: 5.99,
-    ad_free: 9.99
+    standard_pass: 79,
+    premium_pass: 139,
+    vip_pass: 249
   };
   return prices[tier] || null;
 }
@@ -284,14 +285,14 @@ function getCurrentPriceForTier(tier) {
 export async function getElasticityBreakdown(tier) {
   const params = await loadElasticityParams();
 
-  if (!params.tiers[tier]) {
+  if (!params[tier]) {
     throw new Error(`Unknown tier: ${tier}`);
   }
 
   return {
-    base: params.tiers[tier].base_elasticity,
-    segments: params.tiers[tier].segments,
-    cohorts: params.tiers[tier].cohort_elasticity,
-    confidenceInterval: params.tiers[tier].confidence_interval
+    base: params[tier].base_elasticity,
+    segments: params[tier].segments,
+    cohorts: params[tier].cohort_elasticity,
+    confidenceInterval: params[tier].confidence_interval
   };
 }

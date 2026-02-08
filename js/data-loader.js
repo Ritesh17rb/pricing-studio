@@ -1,6 +1,6 @@
 /**
  * Data Loader Module
- * Loads and preprocesses all data files for the Price Elasticity POC
+ * Loads and preprocesses all data files for the Legoland Pricing & Revenue Optimization Studio
  *
  * Dependencies: None (Vanilla JavaScript)
  *
@@ -11,12 +11,12 @@
 
 // Global data cache to avoid redundant fetches
 const dataCache = {
-  subscribers: null,
-  weeklyAggregated: null,
-  pricingHistory: null,
+  visitors: null,
+  dailyAggregated: null,
+  membershipTiers: null,
   externalFactors: null,
   marketingSpend: null,
-  contentReleases: null,
+  attractionOpenings: null,
   elasticityParams: null,
   scenarios: null,
   metadata: null,
@@ -37,8 +37,8 @@ export async function loadAllData() {
       elasticityParams,
       scenarios,
       metadata,
-      weeklyAggregated,
-      pricingHistory,
+      dailyAggregated,
+      membershipTiers,
       externalFactors,
       eventCalendar,
       promoMetadata,
@@ -47,8 +47,8 @@ export async function loadAllData() {
       loadElasticityParams(),
       loadScenarios(),
       loadMetadata(),
-      loadWeeklyAggregated(),
-      loadPricingHistory(),
+      loadDailyAggregated(),
+      loadMembershipTiers(),
       loadExternalFactors(),
       loadEventCalendar(),
       loadPromoMetadata(),
@@ -68,8 +68,8 @@ export async function loadAllData() {
       elasticityParams,
       scenarios,
       metadata,
-      weeklyAggregated,
-      pricingHistory,
+      dailyAggregated,
+      membershipTiers,
       externalFactors,
       eventCalendar,
       promoMetadata,
@@ -153,49 +153,49 @@ export async function loadMetadata() {
 }
 
 /**
- * Load weekly aggregated data from CSV
- * @returns {Promise<Array>} Array of weekly aggregated records
+ * Load daily aggregated data from CSV
+ * @returns {Promise<Array>} Array of daily aggregated records
  */
-export async function loadWeeklyAggregated() {
-  if (dataCache.weeklyAggregated) {
-    return dataCache.weeklyAggregated;
+export async function loadDailyAggregated() {
+  if (dataCache.dailyAggregated) {
+    return dataCache.dailyAggregated;
   }
 
   try {
-    const response = await fetch('data/weekly_aggregated.csv');
+    const response = await fetch('data/daily_aggregated.csv');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const csvText = await response.text();
     const data = parseCSV(csvText);
-    dataCache.weeklyAggregated = data;
+    dataCache.dailyAggregated = data;
     return data;
   } catch (error) {
-    console.error('Error loading weekly aggregated data:', error);
+    console.error('Error loading daily aggregated data:', error);
     throw error;
   }
 }
 
 /**
- * Load pricing history from CSV
- * @returns {Promise<Array>} Array of pricing history records
+ * Load membership tiers from CSV
+ * @returns {Promise<Array>} Array of membership tier records
  */
-export async function loadPricingHistory() {
-  if (dataCache.pricingHistory) {
-    return dataCache.pricingHistory;
+export async function loadMembershipTiers() {
+  if (dataCache.membershipTiers) {
+    return dataCache.membershipTiers;
   }
 
   try {
-    const response = await fetch('data/pricing_history.csv');
+    const response = await fetch('data/membership_tiers.csv');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const csvText = await response.text();
     const data = parseCSV(csvText);
-    dataCache.pricingHistory = data;
+    dataCache.membershipTiers = data;
     return data;
   } catch (error) {
-    console.error('Error loading pricing history:', error);
+    console.error('Error loading membership tiers:', error);
     throw error;
   }
 }
@@ -342,22 +342,22 @@ function parseCSV(csvText) {
 
 /**
  * Get elasticity for a specific tier and segment
- * @param {string} tier - Tier name (ad_supported, ad_free)
+ * @param {string} tier - Tier name (standard_pass, premium_pass, vip_pass)
  * @param {string} segment - Segment name (optional, e.g., 'new_0_3mo')
  * @returns {Promise<number>} Elasticity coefficient
  */
 export async function getElasticity(tier, segment = null) {
   const params = await loadElasticityParams();
 
-  if (!params.tiers[tier]) {
+  if (!params[tier]) {
     throw new Error(`Unknown tier: ${tier}`);
   }
 
-  if (segment && params.tiers[tier].segments[segment]) {
-    return params.tiers[tier].segments[segment].elasticity;
+  if (segment && params[tier].segments[segment]) {
+    return params[tier].segments[segment];
   }
 
-  return params.tiers[tier].base_elasticity;
+  return params[tier].base_elasticity;
 }
 
 /**
@@ -395,21 +395,21 @@ export async function getBaselineScenario() {
 }
 
 /**
- * Filter weekly data by tier and date range
+ * Filter daily data by tier and date range
  * @param {string} tier - Tier name (optional, 'all' for all tiers)
  * @param {string} startDate - Start date (YYYY-MM-DD, optional)
  * @param {string} endDate - End date (YYYY-MM-DD, optional)
  * @returns {Promise<Array>} Filtered data
  */
-export async function getWeeklyData(tier = 'all', startDate = null, endDate = null) {
-  const data = await loadWeeklyAggregated();
-  console.log('Total weekly data records loaded:', data.length);
+export async function getDailyData(tier = 'all', startDate = null, endDate = null) {
+  const data = await loadDailyAggregated();
+  console.log('Total daily data records loaded:', data.length);
 
   let filtered = data;
 
   // Filter by tier
   if (tier !== 'all') {
-    filtered = filtered.filter(d => d.tier === tier);
+    filtered = filtered.filter(d => d.membership_tier === tier);
     console.log(`Filtered to tier "${tier}":`, filtered.length, 'records');
   }
 
@@ -426,34 +426,37 @@ export async function getWeeklyData(tier = 'all', startDate = null, endDate = nu
   if (filtered.length === 0) {
     console.warn(`Warning: No data found for tier="${tier}", startDate="${startDate}", endDate="${endDate}"`);
     // Show sample of available tiers
-    const availableTiers = [...new Set(data.map(d => d.tier))];
+    const availableTiers = [...new Set(data.map(d => d.membership_tier))];
     console.log('Available tiers:', availableTiers);
   }
 
   return filtered;
 }
 
+// Maintain backwards compatibility alias
+export const getWeeklyData = getDailyData;
+
 /**
  * Get current pricing for all tiers
  * @returns {Promise<Object>} Object with current prices by tier
  */
 export async function getCurrentPrices() {
-  const pricingHistory = await loadPricingHistory();
+  const membershipTiers = await loadMembershipTiers();
 
   // Get latest date
-  const latestDate = pricingHistory.reduce((max, record) => {
-    return record.date > max ? record.date : max;
+  const latestDate = membershipTiers.reduce((max, record) => {
+    return record.effective_date > max ? record.effective_date : max;
   }, '2000-01-01');
 
   // Get prices for latest date
-  const latestPrices = pricingHistory
-    .filter(record => record.date === latestDate)
+  const latestPrices = membershipTiers
+    .filter(record => record.effective_date === latestDate)
     .reduce((acc, record) => {
       acc[record.tier] = {
-        base_price: record.base_price,
-        effective_price: record.effective_price,
-        is_promo: record.is_promo,
-        promo_discount_pct: record.promo_discount_pct
+        list_price: record.list_price,
+        avg_paid_price: record.avg_paid_price,
+        promotion_active: record.promotion_active,
+        promotion_description: record.promotion_description
       };
       return acc;
     }, {});
@@ -463,7 +466,7 @@ export async function getCurrentPrices() {
 
 /**
  * Get column description from metadata
- * @param {string} dataset - Dataset name (e.g., 'subscribers')
+ * @param {string} dataset - Dataset name (e.g., 'visitors')
  * @param {string} column - Column name
  * @returns {Promise<string>} Column description
  */
@@ -480,7 +483,7 @@ export async function getColumnDescription(dataset, column) {
 
 /**
  * Get business term definition
- * @param {string} term - Business term (e.g., 'ARPU')
+ * @param {string} term - Business term (e.g., 'ARPV')
  * @returns {Promise<string>} Term definition
  */
 export async function getBusinessTermDefinition(term) {
@@ -516,7 +519,7 @@ export function getCacheStatus() {
 }
 
 /**
- * Load customer segment data via segmentation engine
+ * Load visitor segment data via segmentation engine
  * @returns {Promise<boolean>} True if successful, false otherwise
  */
 export async function loadSegmentData() {
@@ -528,7 +531,7 @@ export async function loadSegmentData() {
   try {
     const loaded = await window.segmentEngine.loadSegmentData();
     if (loaded) {
-      console.log('✓ Customer segment data loaded successfully');
+      console.log('✓ Visitor segment data loaded successfully');
       dataCache.segmentsAvailable = true;
     }
     return loaded;

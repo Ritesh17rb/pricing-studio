@@ -1,317 +1,237 @@
 [
   {
     "id": "scenario_001",
-    "name": "Increase Ad-Lite by $1.00",
+    "name": "Increase Standard Pass by $10",
+    "description": "Test visitor price sensitivity for standard admission during non-peak season",
     "category": "price_increase",
     "model_type": "churn",
-    "description": "Test $1 price increase on Ad-Lite tier (from $5.99 to $6.99)",
-    "impact_summary": "Projected +3.5% revenue, -2.1% subscribers, +0.9% churn",
     "config": {
-      "tier": "ad_supported",
-      "current_price": 5.99,
-      "new_price": 6.99,
-      "price_change_pct": 16.69,
-      "promotion": null,
-      "target_segment": "all",
-      "effective_date": "2025-03-01",
-      "grandfathering": false
+      "tier": "standard_pass",
+      "current_price": 79,
+      "new_price": 89,
+      "price_change_pct": 12.7,
+      "effective_date": "2026-03-01",
+      "duration_months": 12
     },
     "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": true,
-      "notice_period_30d": true,
-      "min_price": 3.99,
-      "max_price": 7.99
+      "platform": "all",
+      "policy": "new_visitors_only"
     },
-    "priority": "high",
-    "business_rationale": "Test price elasticity at +$1 increment to optimize revenue while managing churn"
+    "impact_summary": {
+      "revenue_change_pct": 8.5,
+      "visitor_change_pct": -3.2,
+      "return_rate_change_pp": -0.6
+    },
+    "rationale": "Standard pass visitors are moderately price-sensitive. A $10 increase should yield net revenue gain despite some visitor loss."
   },
   {
     "id": "scenario_002",
-    "name": "Increase Ad-free by $1.00",
+    "name": "Increase Premium Pass by $10",
+    "description": "Test premium tier price sensitivity",
     "category": "price_increase",
     "model_type": "churn",
-    "description": "Test $1 price increase on ad-free tier (from $9.99 to $10.99)",
-    "impact_summary": "Projected +4.2% revenue, -1.7% subscribers, +0.6% churn",
     "config": {
-      "tier": "ad_free",
-      "current_price": 9.99,
-      "new_price": 10.99,
-      "price_change_pct": 10.01,
-      "promotion": null,
-      "target_segment": "all",
-      "effective_date": "2025-03-01",
-      "grandfathering": false
+      "tier": "premium_pass",
+      "current_price": 139,
+      "new_price": 149,
+      "price_change_pct": 7.2,
+      "effective_date": "2026-03-01",
+      "duration_months": 12
     },
     "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": true,
-      "notice_period_30d": true,
-      "min_price": 6.99,
-      "max_price": 12.99
+      "platform": "all",
+      "policy": "new_visitors_only"
     },
-    "priority": "high",
-    "business_rationale": "Ad-free tier has lower elasticity, making it safer candidate for price increase"
+    "impact_summary": {
+      "revenue_change_pct": 4.8,
+      "visitor_change_pct": -1.2,
+      "return_rate_change_pp": -0.3
+    },
+    "rationale": "Premium visitors are less price-sensitive. Modest visitor loss with strong revenue gain."
   },
   {
     "id": "scenario_003",
-    "name": "Launch 50% Off Promo (3 months)",
+    "name": "Summer Flash Sale - 40% Off Standard",
+    "description": "Limited-time promotional discount for standard admission",
     "category": "promotion",
     "model_type": "acquisition",
-    "description": "Offer 50% discount for 3 months on Ad-Lite tier ($2.99 for 3mo, then $5.99)",
-    "impact_summary": "Projected +35% new subs during promo, -18% revenue short-term, net positive after 12mo",
     "config": {
-      "tier": "ad_supported",
-      "current_price": 5.99,
-      "new_price": 2.99,
-      "price_change_pct": -50.08,
-      "promotion": {
-        "type": "introductory_discount",
-        "duration_months": 3,
-        "discount_pct": 50,
-        "promo_code": "SAVE50",
-        "eligibility": "new_subscribers_only",
-        "start_date": "2025-02-01",
-        "end_date": "2025-05-01"
-      },
-      "target_segment": "new_subscribers",
-      "effective_date": "2025-02-01",
-      "grandfathering": false
+      "tier": "standard_pass",
+      "current_price": 79,
+      "new_price": 47,
+      "price_change_pct": -40.5,
+      "effective_date": "2026-06-01",
+      "duration_months": 2,
+      "promotion_type": "limited_time",
+      "target_audience": "new_visitors"
     },
     "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": false,
-      "notice_period_30d": false,
-      "min_price": 2.99,
-      "max_price": 5.99
+      "max_redemptions": 50000,
+      "channel": "online_only"
     },
-    "priority": "high",
-    "business_rationale": "Aggressive acquisition strategy during Q1 to drive subscriber growth"
+    "impact_summary": {
+      "new_visits_change_pct": 52,
+      "revenue_change_pct": -9,
+      "fast_pass_attachment_lift": 0.08
+    },
+    "rationale": "Drive summer peak attendance with aggressive discount. Short-term revenue dip offset by ancillary spend and future visits."
   },
   {
     "id": "scenario_004",
-    "name": "Launch 30% Off Promo (6 months)",
+    "name": "Spring Promo - 30% Off Premium",
+    "description": "Shoulder season promotional offer for premium pass",
     "category": "promotion",
     "model_type": "acquisition",
-    "description": "Offer 30% discount for 6 months on ad-free tier ($6.99 for 6mo, then $9.99)",
-    "impact_summary": "Projected +22% new subs, -12% revenue short-term, net positive after 18mo due to lower churn",
     "config": {
-      "tier": "ad_free",
-      "current_price": 9.99,
-      "new_price": 6.99,
-      "price_change_pct": -30.03,
-      "promotion": {
-        "type": "introductory_discount",
-        "duration_months": 6,
-        "discount_pct": 30,
-        "promo_code": "WELCOME30",
-        "eligibility": "new_subscribers_only",
-        "start_date": "2025-02-01",
-        "end_date": "2025-08-01"
-      },
-      "target_segment": "new_subscribers",
-      "effective_date": "2025-02-01",
-      "grandfathering": false
+      "tier": "premium_pass",
+      "current_price": 139,
+      "new_price": 97,
+      "price_change_pct": -30.2,
+      "effective_date": "2026-03-15",
+      "duration_months": 3,
+      "promotion_type": "limited_time"
     },
     "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": false,
-      "notice_period_30d": false,
-      "min_price": 6.99,
-      "max_price": 9.99
+      "channel": "all"
     },
-    "priority": "medium",
-    "business_rationale": "Longer promotional period to increase LTV by reducing early churn"
+    "impact_summary": {
+      "new_visits_change_pct": 38,
+      "revenue_change_pct": -5,
+      "upgrade_from_standard_pct": 12
+    },
+    "rationale": "Fill capacity during shoulder season. Attract premium-curious visitors who may upgrade after trial."
   },
   {
     "id": "scenario_005",
-    "name": "Introduce Basic Tier at $2.99",
+    "name": "Launch Economy Pass at $49",
+    "description": "Introduce budget-tier pass with limited attraction access",
     "category": "new_tier",
     "model_type": "migration",
-    "description": "Launch new Basic tier at $2.99/mo with limited content library and Ad-Lite",
-    "impact_summary": "Projected +25% total subs, -8% tier mix to Basic, net revenue neutral due to volume",
     "config": {
-      "tier": "basic",
-      "current_price": null,
-      "new_price": 2.99,
-      "price_change_pct": null,
-      "promotion": null,
-      "target_segment": "price_sensitive",
-      "effective_date": "2025-04-01",
-      "grandfathering": false,
-      "tier_features": {
-        "ads": true,
-        "content_library": "limited",
-        "concurrent_streams": 1,
-        "video_quality": "SD"
-      }
+      "new_tier": "economy_pass",
+      "tier_price": 49,
+      "features": [
+        "limited_attractions",
+        "weekday_only",
+        "no_fastpass"
+      ],
+      "effective_date": "2026-01-15",
+      "cannibalization_tiers": [
+        "standard_pass"
+      ]
     },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": false,
-      "notice_period_30d": false,
-      "min_price": 2.99,
-      "max_price": 4.99
+    "impact_summary": {
+      "new_tier_adoption_pct": 18,
+      "standard_cannibalization_pct": 22,
+      "total_visitor_lift_pct": 12,
+      "revenue_change_pct": -3.5
     },
-    "priority": "medium",
-    "business_rationale": "Capture price-sensitive segment and compete with competitor basic tiers"
+    "rationale": "Capture price-sensitive market segment. Accept cannibalization for volume growth."
   },
   {
     "id": "scenario_006",
-    "name": "Remove Free Trial",
+    "name": "Remove Free Parking for Standard Pass",
+    "description": "Add $10 parking fee for standard admission (included in Premium/VIP)",
     "category": "policy_change",
     "model_type": "churn",
-    "description": "Remove 7-day free trial, require immediate payment on signup",
-    "impact_summary": "Projected -15% new sign-ups, but +20% conversion quality (lower early churn)",
     "config": {
-      "tier": "all",
-      "current_price": null,
-      "new_price": null,
-      "price_change_pct": null,
-      "promotion": null,
-      "target_segment": "all",
-      "effective_date": "2025-03-01",
-      "grandfathering": false,
-      "policy_change": {
-        "type": "remove_free_trial",
-        "current_trial_days": 7,
-        "new_trial_days": 0
-      }
+      "tier": "standard_pass",
+      "parking_fee": 10,
+      "effective_date": "2026-04-01",
+      "exemptions": [
+        "premium_pass",
+        "vip_pass"
+      ]
     },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": false,
-      "notice_period_30d": false,
-      "min_price": null,
-      "max_price": null
+    "impact_summary": {
+      "visitor_change_pct": -4.2,
+      "revenue_change_pct": 3.8,
+      "upgrade_to_premium_pct": 8
     },
-    "priority": "low",
-    "business_rationale": "Reduce trial abuse and improve subscriber quality, even at cost of volume"
+    "rationale": "Effective price increase disguised as unbundling. Encourages premium tier upgrades."
   },
   {
     "id": "scenario_007",
-    "name": "Decrease Ad-Lite to $4.99",
+    "name": "Decrease Standard to $69 (Competitive Response)",
+    "description": "Lower standard admission to match competitor pricing",
     "category": "price_decrease",
     "model_type": "acquisition",
-    "description": "Lower Ad-Lite tier price from $5.99 to $4.99 to compete with basic tiers",
-    "impact_summary": "Projected +15% new subs, +8% total subs, -8% ARPU, net revenue flat",
     "config": {
-      "tier": "ad_supported",
-      "current_price": 5.99,
-      "new_price": 4.99,
-      "price_change_pct": -16.69,
-      "promotion": null,
-      "target_segment": "all",
-      "effective_date": "2025-05-01",
-      "grandfathering": false
+      "tier": "standard_pass",
+      "current_price": 79,
+      "new_price": 69,
+      "price_change_pct": -12.7,
+      "effective_date": "2026-02-01",
+      "duration_months": 6,
+      "reason": "competitive_response"
     },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": true,
-      "notice_period_30d": true,
-      "min_price": 3.99,
-      "max_price": 7.99
+    "impact_summary": {
+      "new_visits_change_pct": 18,
+      "revenue_change_pct": -2,
+      "market_share_gain_pp": 3.5
     },
-    "priority": "low",
-    "business_rationale": "Defensive pricing move if competitors launch aggressive pricing"
+    "rationale": "Defend market share against competitor discounting. Volume increase partially offsets price reduction."
   },
   {
     "id": "scenario_008",
-    "name": "Bundle Service & Premium at $14.99",
+    "name": "Bundle Premium + Fast Pass at $179",
+    "description": "Create value bundle with fast pass included",
     "category": "bundling",
     "model_type": "migration",
-    "description": "Launch bundle: Service Ad-free ($9.99) + Premium Ad-free ($9.99) = $14.99 (save $3.99)",
-    "impact_summary": "Projected +40% cross-sell to Max, +12% overall revenue, +8% retention",
     "config": {
-      "tier": "bundle",
-      "current_price": 19.98,
-      "new_price": 14.99,
-      "price_change_pct": -24.97,
-      "promotion": null,
-      "target_segment": "existing_ad_free",
-      "effective_date": "2025-06-01",
-      "grandfathering": false,
-      "bundle_components": {
-        "service": {
-          "tier": "ad_free",
-          "standalone_price": 9.99
-        },
-        "premium": {
-          "tier": "ad_free",
-          "standalone_price": 9.99
-        },
-        "bundle_discount": 3.99,
-        "bundle_discount_pct": 20
-      }
+      "tier": "premium_pass",
+      "current_price": 139,
+      "new_bundle_price": 179,
+      "includes": [
+        "admission",
+        "fast_pass",
+        "priority_parking"
+      ],
+      "standalone_value": 207,
+      "savings_pct": 13.5,
+      "effective_date": "2026-05-01"
     },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": false,
-      "notice_period_30d": false,
-      "min_price": 14.99,
-      "max_price": 18.99
+    "impact_summary": {
+      "bundle_adoption_pct": 42,
+      "upgrade_from_standard_pct": 15,
+      "revenue_per_visitor_change_pct": 22
     },
-    "priority": "high",
-    "business_rationale": "Strategic bundling to increase LTV, reduce churn, and compete with Disney+ bundle"
+    "rationale": "Perceived value drives adoption. Increase spend per visitor with attractive bundle savings."
+  },
+  {
+    "id": "scenario_009",
+    "name": "Online Booking Fee +$5 with Priority Entry",
+    "description": "Add convenience fee for online bookings but include priority entry benefit",
+    "category": "platform_specific",
+    "model_type": "churn",
+    "config": {
+      "tier": "all",
+      "platform": "online",
+      "fee": 5,
+      "benefit": "priority_entry_lane",
+      "effective_date": "2026-03-01"
+    },
+    "impact_summary": {
+      "online_booking_change_pct": -8,
+      "onsite_booking_change_pct": 12,
+      "revenue_change_pct": 2.1
+    },
+    "rationale": "Monetize convenience while managing demand. Benefit justifies fee for most visitors."
   },
   {
     "id": "scenario_010",
-    "name": "Platform-Specific: iOS +$0.99",
-    "category": "price_increase",
-    "model_type": "migration",
-    "description": "Increase iOS prices by $0.99 to offset Apple's 30% commission (ad-free: $9.99\u2192$10.98 iOS only)",
-    "impact_summary": "Projected +5% revenue from iOS, -3% iOS subs (migrate to web/other platforms)",
-    "config": {
-      "tier": "ad_free",
-      "current_price": 9.99,
-      "new_price": 10.98,
-      "price_change_pct": 9.91,
-      "promotion": null,
-      "target_segment": "ios_users",
-      "effective_date": "2025-07-01",
-      "grandfathering": true,
-      "platform_specific": {
-        "platform": "ios",
-        "reason": "apple_commission",
-        "commission_rate": 0.3,
-        "other_platforms_price": 9.99
-      }
-    },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": true,
-      "notice_period_30d": true,
-      "min_price": 9.99,
-      "max_price": 14.99
-    },
-    "priority": "medium",
-    "business_rationale": "Offset platform fees while maintaining pricing parity on other platforms"
-  },
-  {
-    "id": "scenario_baseline",
     "name": "Do Nothing (Baseline)",
+    "description": "Maintain current pricing structure with no changes",
     "category": "baseline",
     "model_type": "baseline",
-    "description": "Maintain current pricing and promotional strategy with no changes",
-    "impact_summary": "Baseline scenario for comparison - organic growth continues at current trajectory",
     "config": {
       "tier": "all",
-      "current_price": null,
-      "new_price": null,
-      "price_change_pct": 0,
-      "promotion": null,
-      "target_segment": "all",
-      "effective_date": null,
-      "grandfathering": false
+      "maintain_current_pricing": true
     },
-    "constraints": {
-      "platform_compliant": true,
-      "price_change_12mo_limit": true,
-      "notice_period_30d": true,
-      "min_price": null,
-      "max_price": null
+    "impact_summary": {
+      "revenue_change_pct": 0,
+      "visitor_change_pct": 0
     },
-    "priority": "n/a",
-    "business_rationale": "Control scenario to measure incremental impact of pricing changes"
+    "rationale": "Control scenario for comparison. Represents status quo continuation."
   }
 ]

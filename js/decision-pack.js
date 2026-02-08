@@ -4,7 +4,7 @@
  * Export-ready + Auditable
  */
 
-import { formatCurrency, formatPercent, formatNumber } from './utils.js';
+import { formatCurrency, formatPercent, formatNumber, showAlert } from './utils.js';
 
 /**
  * Export Top 3 scenarios to PDF
@@ -14,7 +14,7 @@ import { formatCurrency, formatPercent, formatNumber } from './utils.js';
  */
 export async function exportToPDF(top3Scenarios, objective, constraints = {}) {
   if (!top3Scenarios || top3Scenarios.length === 0) {
-    alert('No scenarios to export. Please rank scenarios first.');
+    showAlert('No scenarios to export. Please rank scenarios first.', 'warning');
     return;
   }
 
@@ -58,7 +58,7 @@ export async function exportToPDF(top3Scenarios, objective, constraints = {}) {
 
   } catch (error) {
     console.error('Error exporting PDF:', error);
-    alert('Error generating PDF. Check console for details.');
+    showAlert('Error generating PDF. Check console for details.', 'danger');
     throw error;
   }
 }
@@ -70,7 +70,7 @@ export async function exportToPDF(top3Scenarios, objective, constraints = {}) {
  */
 export async function exportToXLSX(scenarios, top3 = null) {
   if (!scenarios || scenarios.length === 0) {
-    alert('No scenarios to export.');
+    showAlert('No scenarios to export.', 'warning');
     return;
   }
 
@@ -107,7 +107,7 @@ export async function exportToXLSX(scenarios, top3 = null) {
 
   } catch (error) {
     console.error('Error exporting XLSX:', error);
-    alert('Error generating Excel file. Check console for details.');
+    showAlert('Error generating Excel file. Check console for details.', 'danger');
     throw error;
   }
 }
@@ -143,7 +143,7 @@ function addExecutiveSummary(doc, top3, objective, timestamp) {
     ``,
     `Key Metrics:`,
     `• Revenue Impact: ${winner.delta.revenue >= 0 ? '+' : ''}${formatPercent(winner.delta.revenue_pct, 1)}`,
-    `• Subscriber Impact: ${winner.delta.subscribers >= 0 ? '+' : ''}${formatPercent(winner.delta.subscribers_pct, 1)}`,
+    `• Subscriber Impact: ${winner.delta.visitors >= 0 ? '+' : ''}${formatPercent(winner.delta.visitors_pct, 1)}`,
     `• Churn Impact: ${winner.delta.churn_rate >= 0 ? '+' : ''}${formatPercent(winner.delta.churn_rate, 2)}pp`,
     `• Risk Level: ${winner.risk_level}`,
     `• Decision Score: ${winner.decision_score.toFixed(1)}`,
@@ -187,7 +187,7 @@ function addTop3Recommendations(doc, top3) {
 
     const metrics = [
       `Revenue: ${scenario.delta.revenue >= 0 ? '+' : ''}${formatPercent(scenario.delta.revenue_pct, 1)} | ` +
-      `Subscribers: ${scenario.delta.subscribers >= 0 ? '+' : ''}${formatPercent(scenario.delta.subscribers_pct, 1)} | ` +
+      `Subscribers: ${scenario.delta.visitors >= 0 ? '+' : ''}${formatPercent(scenario.delta.visitors_pct, 1)} | ` +
       `Churn: ${scenario.delta.churn_rate >= 0 ? '+' : ''}${formatPercent(scenario.delta.churn_rate, 2)}pp`,
       `Risk: ${scenario.risk_level} | Score: ${scenario.decision_score.toFixed(1)}`
     ];
@@ -234,9 +234,9 @@ function addKPIComparison(doc, top3) {
       top3[2] ? `${formatPercent(top3[2].delta.revenue_pct, 1)}` : 'N/A'
     ],
     ['Subscriber Impact',
-      `${formatPercent(top3[0].delta.subscribers_pct, 1)}`,
-      top3[1] ? `${formatPercent(top3[1].delta.subscribers_pct, 1)}` : 'N/A',
-      top3[2] ? `${formatPercent(top3[2].delta.subscribers_pct, 1)}` : 'N/A'
+      `${formatPercent(top3[0].delta.visitors_pct, 1)}`,
+      top3[1] ? `${formatPercent(top3[1].delta.visitors_pct, 1)}` : 'N/A',
+      top3[2] ? `${formatPercent(top3[2].delta.visitors_pct, 1)}` : 'N/A'
     ],
     ['Churn Impact',
       `${formatPercent(top3[0].delta.churn_rate, 2)}pp`,
@@ -332,7 +332,7 @@ function addImplementationGuidance(doc, winner) {
   const risks = [
     'Churn spike monitoring: Track cohort churn weekly (0-4, 4-8, 8-12 weeks)',
     'Fallback plan: Prepare win-back campaign for churned users',
-    'Communication: Clear value messaging to existing subscribers',
+    'Communication: Clear value messaging to existing visitors',
     'Grandfathering: Consider protecting loyal users (12+ month tenure)'
   ];
 
@@ -369,7 +369,7 @@ function addAuditTrail(doc, constraints, timestamp) {
     ['Constraints Applied', Object.keys(constraints).length > 0 ?
       `Churn Cap: ${(constraints.churn_cap * 100).toFixed(1)}%` :
       'None'],
-    ['Data Source', 'Streaming service subscriber panel (50K records)'],
+    ['Data Source', 'Streaming service visitor panel (50K records)'],
     ['Forecast Horizon', '12 months'],
     ['Confidence Level', '90%']
   ];
@@ -422,7 +422,7 @@ function createSummarySheet(top3) {
       i + 1,
       s.scenario_name || s.id,
       formatPercent(s.delta.revenue_pct, 1),
-      formatPercent(s.delta.subscribers_pct, 1),
+      formatPercent(s.delta.visitors_pct, 1),
       formatPercent(s.delta.churn_rate, 2) + 'pp',
       s.risk_level,
       s.decision_score.toFixed(1)
@@ -446,7 +446,7 @@ function createScenariosSheet(scenarios) {
       s.scenario_config?.tier || '',
       s.scenario_config?.new_price || '',
       formatPercent(s.delta?.revenue_pct || 0, 1),
-      formatPercent(s.delta?.subscribers_pct || 0, 1),
+      formatPercent(s.delta?.visitors_pct || 0, 1),
       formatPercent((s.delta?.churn_rate || 0) * 100, 2),
       formatPercent(s.delta?.arpu_pct || 0, 1)
     ]);
@@ -467,8 +467,8 @@ function createKPISheet(scenarios) {
       s.scenario_name || s.id,
       formatCurrency(s.baseline?.revenue || 0),
       formatCurrency(s.forecasted?.revenue || 0),
-      formatNumber(s.baseline?.subscribers || s.baseline?.activeSubscribers || 0),
-      formatNumber(s.forecasted?.subscribers || s.forecasted?.activeSubscribers || 0),
+      formatNumber(s.baseline?.visitors || s.baseline?.activeSubscribers || 0),
+      formatNumber(s.forecasted?.visitors || s.forecasted?.activeSubscribers || 0),
       formatPercent((s.baseline?.churn_rate || 0) * 100, 2),
       formatPercent((s.forecasted?.churn_rate || s.forecasted?.churnRate || 0) * 100, 2)
     ]);

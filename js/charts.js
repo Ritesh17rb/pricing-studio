@@ -680,7 +680,7 @@ export function renderTierMixShift(containerId, data, options = {}) {
     .append('title')
     .text(function(d, i) {
       const tierIndex = stackedData.indexOf(d3.select(this.parentNode).datum());
-      return `${tierLabels[tierIndex]}: ${(d[1] - d[0]).toLocaleString()} subscribers`;
+      return `${tierLabels[tierIndex]}: ${(d[1] - d[0]).toLocaleString()} visitors`;
     });
 
   // Axes
@@ -908,7 +908,7 @@ export function renderTradeoffsScatter(containerId, data, options = {}) {
  * Shows KPI comparison across multiple scenarios
  *
  * @param {string} containerId - DOM element ID
- * @param {Array} data - [{ name, subscribers_pct, revenue_pct, churn_pct, arpu_pct }]
+ * @param {Array} data - [{ name, visitors_pct, revenue_pct, churn_pct, arpu_pct }]
  */
 export function renderComparisonBarChart(containerId, data, options = {}) {
   const container = d3.select(`#${containerId}`);
@@ -934,12 +934,12 @@ export function renderComparisonBarChart(containerId, data, options = {}) {
 
   // KPIs to compare
   const kpis = ['Subscribers', 'Revenue', 'ARPU', 'Churn'];
-  const kpiKeys = ['subscribers_pct', 'revenue_pct', 'arpu_pct', 'churn_pct'];
+  const kpiKeys = ['visitors_pct', 'revenue_pct', 'arpu_pct', 'churn_pct'];
 
   // Sanitize data - replace NaN/undefined with 0
   const sanitizedData = data.map(d => ({
     name: d.name || 'Unnamed',
-    subscribers_pct: Number.isFinite(d.subscribers_pct) ? d.subscribers_pct : 0,
+    visitors_pct: Number.isFinite(d.visitors_pct) ? d.visitors_pct : 0,
     revenue_pct: Number.isFinite(d.revenue_pct) ? d.revenue_pct : 0,
     arpu_pct: Number.isFinite(d.arpu_pct) ? d.arpu_pct : 0,
     churn_pct: Number.isFinite(d.churn_pct) ? d.churn_pct : 0

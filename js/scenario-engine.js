@@ -12,7 +12,7 @@ import {
   calculateElasticity
 } from './elasticity-model.js';
 
-import { getWeeklyData, getCurrentPrices, loadElasticityParams } from './data-loader.js';
+import { getDailyData, getWeeklyData, getCurrentPrices, loadElasticityParams } from './data-loader.js';
 
 import { pyodideBridge } from './pyodide-bridge.js';
 
@@ -42,14 +42,13 @@ export async function simulateScenario(scenario, options = {}) {
 
     // Map new/hypothetical tiers to proxy tiers for baseline data
     const tierMap = {
-      'basic': 'ad_supported',  // Basic tier uses ad_supported as proxy
-      'premium': 'ad_free',      // Premium tier uses ad_free as proxy
-      'bundle': 'ad_free'        // Bundle uses ad_free (already handled)
+      'economy_pass': 'standard_pass',  // Economy tier uses standard_pass as proxy
+      'vip_pass': 'premium_pass',       // VIP pass uses premium_pass as proxy (if not in data)
     };
 
     const baselineTier = tierMap[scenario.config.tier] || scenario.config.tier;
-    // Only "basic" and "premium" are truly new tiers; "bundle" is just a pricing variation of ad_free
-    const isNewTier = (scenario.config.tier === 'basic' || scenario.config.tier === 'premium');
+    // Only "economy_pass" is truly a new tier
+    const isNewTier = (scenario.config.tier === 'economy_pass');
 
     if (tierMap[scenario.config.tier] && isNewTier) {
       console.log(`⚠️ New tier "${scenario.config.tier}" - using "${baselineTier}" as baseline proxy`);
@@ -73,68 +72,68 @@ export async function simulateScenario(scenario, options = {}) {
     const demandForecast = forecastDemand(
       scenario.config.current_price,
       scenario.config.new_price,
-      baseline.activeSubscribers,
+      baseline.activeVisitors,
       elasticityInfo.elasticity
     );
 
-    // Forecast churn
-    const churnForecast = await forecastChurn(
+    // Forecast return rate (inverse of churn)
+    const returnRateForecast = await forecastChurn(
       scenario.config.tier,
       priceChangePct,
-      baseline.churnRate
+      baseline.returnRate
     );
 
-    // Forecast acquisition
-    const acquisitionForecast = await forecastAcquisition(
+    // Forecast new visits (acquisition)
+    const newVisitsForecast = await forecastAcquisition(
       scenario.config.tier,
       priceChangePct,
-      baseline.newSubscribers
+      baseline.newVisitors
     );
 
-    console.log('📊 Acquisition Forecast:', {
+    console.log('📊 New Visits Forecast:', {
       tier: scenario.config.tier,
-      baseline: baseline.newSubscribers,
-      forecasted: acquisitionForecast.forecastedAcquisition,
-      change: acquisitionForecast.change,
-      changePercent: acquisitionForecast.changePercent
+      baseline: baseline.newVisitors,
+      forecasted: newVisitsForecast.forecastedAcquisition,
+      change: newVisitsForecast.change,
+      changePercent: newVisitsForecast.changePercent
     });
 
     // Calculate revenue impact
     const revenueImpact = calculateRevenueImpact(
-      demandForecast.forecastedSubscribers,
+      demandForecast.forecastedVisitors,
       scenario.config.new_price,
-      baseline.activeSubscribers,
+      baseline.activeVisitors,
       scenario.config.current_price
     );
 
-    // Calculate ARPU
-    const forecastedARPU = scenario.config.new_price;
-    const arpuChange = forecastedARPU - baseline.arpu;
+    // Calculate ARPV (Average Revenue Per Visitor)
+    const forecastedARPV = scenario.config.new_price;
+    const arpvChange = forecastedARPV - baseline.arpv;
 
-    // Calculate ARPU percentage change, handling zero baseline
-    let arpuChangePct = 0;
-    if (baseline.arpu > 0) {
-      arpuChangePct = (arpuChange / baseline.arpu) * 100;
-    } else if (arpuChange !== 0) {
-      // If baseline ARPU is 0 but there's a change, use a very large number to indicate significant change
-      arpuChangePct = arpuChange > 0 ? 100 : -100;
+    // Calculate ARPV percentage change, handling zero baseline
+    let arpvChangePct = 0;
+    if (baseline.arpv > 0) {
+      arpvChangePct = (arpvChange / baseline.arpv) * 100;
+    } else if (arpvChange !== 0) {
+      // If baseline ARPV is 0 but there's a change, use a very large number to indicate significant change
+      arpvChangePct = arpvChange > 0 ? 100 : -100;
     }
 
-    // Estimate CLTV (simplified: ARPU × average lifetime months)
-    const avgLifetimeMonths = 24; // Assumption
-    const forecastedCLTV = forecastedARPU * avgLifetimeMonths;
-    const baselineCLTV = baseline.arpu * avgLifetimeMonths;
+    // Estimate Lifetime Value (simplified: ARPV × average lifetime visits)
+    const avgLifetimeVisits = 8; // Assumption: average visitor returns 8 times
+    const forecastedLTV = forecastedARPV * avgLifetimeVisits;
+    const baselineLTV = baseline.arpv * avgLifetimeVisits;
 
-    // Calculate net adds (new acquisitions - churn)
-    const forecastedChurnCount = Math.round(demandForecast.forecastedSubscribers * churnForecast.forecastedChurn);
-    const forecastedNetAdds = acquisitionForecast.forecastedAcquisition - forecastedChurnCount;
-    const baselineNetAdds = baseline.newSubscribers - Math.round(baseline.activeSubscribers * baseline.churnRate);
+    // Calculate net adds (new visitors - non-returning visitors)
+    const forecastedNonReturningCount = Math.round(demandForecast.forecastedVisitors * (1 - returnRateForecast.forecastedChurn));
+    const forecastedNetAdds = newVisitsForecast.forecastedAcquisition - forecastedNonReturningCount;
+    const baselineNetAdds = baseline.newVisitors - Math.round(baseline.activeVisitors * (1 - baseline.returnRate));
 
     // Generate time series forecast (12 months)
     const timeSeries = generateTimeSeries(
       demandForecast,
-      churnForecast,
-      acquisitionForecast,
+      returnRateForecast,
+      newVisitsForecast,
       scenario.config.new_price,
       12
     );
@@ -148,44 +147,44 @@ export async function simulateScenario(scenario, options = {}) {
       confidence_interval: elasticityInfo.confidenceInterval,
 
       baseline: {
-        subscribers: baseline.activeSubscribers,
-        churn_rate: baseline.churnRate,
-        new_subscribers: baseline.newSubscribers,
+        visitors: baseline.activeVisitors,
+        return_rate: baseline.returnRate,
+        new_visitors: baseline.newVisitors,
         revenue: baseline.revenue,
-        arpu: baseline.arpu,
-        cltv: baselineCLTV,
+        arpv: baseline.arpv,
+        ltv: baselineLTV,
         net_adds: baselineNetAdds
       },
 
       forecasted: {
-        subscribers: demandForecast.forecastedSubscribers,
-        churn_rate: churnForecast.forecastedChurn,
-        new_subscribers: acquisitionForecast.forecastedAcquisition,
+        visitors: demandForecast.forecastedVisitors,
+        return_rate: returnRateForecast.forecastedChurn,
+        new_visitors: newVisitsForecast.forecastedAcquisition,
         revenue: revenueImpact.forecastedRevenue,
-        arpu: forecastedARPU,
-        cltv: forecastedCLTV,
+        arpv: forecastedARPV,
+        ltv: forecastedLTV,
         net_adds: forecastedNetAdds
       },
 
       delta: {
-        subscribers: demandForecast.change,
-        subscribers_pct: demandForecast.percentChange,
-        churn_rate: churnForecast.change,
-        churn_rate_pct: churnForecast.changePercent,
-        new_subscribers: acquisitionForecast.change,
-        new_subscribers_pct: acquisitionForecast.changePercent,
+        visitors: demandForecast.change,
+        visitors_pct: demandForecast.percentChange,
+        return_rate: returnRateForecast.change,
+        return_rate_pct: returnRateForecast.changePercent,
+        new_visitors: newVisitsForecast.change,
+        new_visitors_pct: newVisitsForecast.changePercent,
         revenue: revenueImpact.change,
         revenue_pct: revenueImpact.percentChange,
-        arpu: arpuChange,
-        arpu_pct: arpuChangePct,
-        cltv: forecastedCLTV - baselineCLTV,
-        cltv_pct: baselineCLTV > 0 ? ((forecastedCLTV - baselineCLTV) / baselineCLTV) * 100 : 0,
+        arpv: arpvChange,
+        arpv_pct: arpvChangePct,
+        ltv: forecastedLTV - baselineLTV,
+        ltv_pct: baselineLTV > 0 ? ((forecastedLTV - baselineLTV) / baselineLTV) * 100 : 0,
         net_adds: forecastedNetAdds - baselineNetAdds
       },
 
       time_series: timeSeries,
 
-      warnings: generateWarnings(scenario, churnForecast, demandForecast),
+      warnings: generateWarnings(scenario, returnRateForecast, demandForecast),
 
       constraints_met: checkConstraints(scenario)
     };
@@ -208,41 +207,41 @@ export async function simulateScenario(scenario, options = {}) {
 async function simulateBaselineScenario(scenario, options = {}) {
   try {
     // Get current data for all three main tiers
-    const tiers = ['ad_supported', 'ad_free'];
-    const weeklyData = await getWeeklyData('all');
+    const tiers = ['standard_pass', 'premium_pass', 'vip_pass'];
+    const dailyData = await getDailyData('all');
 
     // Calculate aggregated metrics across all tiers
-    let totalSubs = 0;
+    let totalVisitors = 0;
     let totalRevenue = 0;
-    let weightedChurnRate = 0;
-    let weightedNewSubs = 0;
+    let weightedReturnRate = 0;
+    let weightedNewVisitors = 0;
 
     for (const tier of tiers) {
-      const tierData = weeklyData.filter(d => d.tier === tier);
-      const latestWeek = tierData[tierData.length - 1];
+      const tierData = dailyData.filter(d => d.membership_tier === tier);
+      const latestDay = tierData[tierData.length - 1];
 
-      if (latestWeek) {
-        totalSubs += latestWeek.active_subscribers;
-        totalRevenue += latestWeek.revenue;
-        weightedChurnRate += latestWeek.churn_rate * latestWeek.active_subscribers;
-        weightedNewSubs += latestWeek.new_subscribers;
+      if (latestDay) {
+        totalVisitors += latestDay.daily_visitors;
+        totalRevenue += latestDay.daily_revenue;
+        weightedReturnRate += latestDay.return_rate * latestDay.daily_visitors;
+        weightedNewVisitors += latestDay.new_registrations;
       }
     }
 
-    const avgChurnRate = weightedChurnRate / totalSubs;
-    const avgARPU = totalRevenue / totalSubs;
-    const avgLifetimeMonths = 24;
-    const baselineCLTV = avgARPU * avgLifetimeMonths;
-    const baselineNetAdds = weightedNewSubs - Math.round(totalSubs * avgChurnRate);
+    const avgReturnRate = weightedReturnRate / totalVisitors;
+    const avgARPV = totalRevenue / totalVisitors;
+    const avgLifetimeVisits = 8;
+    const baselineLTV = avgARPV * avgLifetimeVisits;
+    const baselineNetAdds = weightedNewVisitors - Math.round(totalVisitors * (1 - avgReturnRate));
 
     // Generate time series (no change over time for baseline)
     const timeSeries = [];
     for (let month = 0; month <= 12; month++) {
       timeSeries.push({
         month,
-        subscribers: Math.round(totalSubs),
+        visitors: Math.round(totalVisitors),
         revenue: Math.round(totalRevenue),
-        churn_rate: avgChurnRate
+        return_rate: avgReturnRate
       });
     }
 
@@ -253,38 +252,38 @@ async function simulateBaselineScenario(scenario, options = {}) {
       confidence_interval: [0, 0],
 
       baseline: {
-        subscribers: totalSubs,
-        churn_rate: avgChurnRate,
-        new_subscribers: weightedNewSubs,
+        visitors: totalVisitors,
+        return_rate: avgReturnRate,
+        new_visitors: weightedNewVisitors,
         revenue: totalRevenue,
-        arpu: avgARPU,
-        cltv: baselineCLTV,
+        arpv: avgARPV,
+        ltv: baselineLTV,
         net_adds: baselineNetAdds
       },
 
       forecasted: {
-        subscribers: totalSubs,
-        churn_rate: avgChurnRate,
-        new_subscribers: weightedNewSubs,
+        visitors: totalVisitors,
+        return_rate: avgReturnRate,
+        new_visitors: weightedNewVisitors,
         revenue: totalRevenue,
-        arpu: avgARPU,
-        cltv: baselineCLTV,
+        arpv: avgARPV,
+        ltv: baselineLTV,
         net_adds: baselineNetAdds
       },
 
       delta: {
-        subscribers: 0,
-        subscribers_pct: 0,
-        churn_rate: 0,
-        churn_rate_pct: 0,
-        new_subscribers: 0,
-        new_subscribers_pct: 0,
+        visitors: 0,
+        visitors_pct: 0,
+        return_rate: 0,
+        return_rate_pct: 0,
+        new_visitors: 0,
+        new_visitors_pct: 0,
         revenue: 0,
         revenue_pct: 0,
-        arpu: 0,
-        arpu_pct: 0,
-        cltv: 0,
-        cltv_pct: 0,
+        arpv: 0,
+        arpv_pct: 0,
+        ltv: 0,
+        ltv_pct: 0,
         net_adds: 0
       },
 
@@ -307,80 +306,80 @@ async function simulateBaselineScenario(scenario, options = {}) {
  * @returns {Promise<Object>} Baseline metrics
  */
 async function getBaselineMetrics(tier, scenario = null) {
-  // Special handling for bundle scenarios
-  if (tier === 'bundle') {
-    console.log('Bundle scenario detected - using ad_free tier as baseline');
+  // Special handling for vip_pass scenarios
+  if (tier === 'vip_pass') {
+    console.log('VIP pass scenario detected - using premium_pass tier as baseline');
 
-    // Use ad_free tier as baseline since bundle includes service ad-free
-    const weeklyData = await getWeeklyData('ad_free');
+    // Use premium_pass tier as baseline since VIP is premium tier with enhancements
+    const dailyData = await getDailyData('premium_pass');
 
-    if (!weeklyData || weeklyData.length === 0) {
-      throw new Error('No data available for ad_free tier (needed for bundle baseline)');
+    if (!dailyData || dailyData.length === 0) {
+      throw new Error('No data available for premium_pass tier (needed for VIP baseline)');
     }
 
-    const latestWeek = weeklyData[weeklyData.length - 1];
+    const latestDay = dailyData[dailyData.length - 1];
 
-    // For bundle scenarios, estimate potential bundle subscribers as a percentage of ad_free
-    // Assumption: ~30% of ad_free users might be interested in bundle
-    const bundlePotentialPct = 0.30;
-    const estimatedBundleSubs = Math.round((latestWeek.active_subscribers || 0) * bundlePotentialPct);
+    // For VIP scenarios, estimate potential VIP visitors as a percentage of premium
+    // Assumption: ~25% of premium_pass users might be interested in VIP
+    const vipPotentialPct = 0.25;
+    const estimatedVIPVisitors = Math.round((latestDay.daily_visitors || 0) * vipPotentialPct);
 
-    // Bundle baseline ARPU should be the CURRENT price, not the new price
-    const bundleCurrentARPU = scenario?.config?.current_price || 14.99;
+    // VIP baseline ARPV should be the CURRENT price, not the new price
+    const vipCurrentARPV = scenario?.config?.current_price || 249;
 
     return {
-      activeSubscribers: estimatedBundleSubs,
-      churnRate: (latestWeek.churn_rate || 0) * 0.7, // Bundles typically have lower churn
-      newSubscribers: Math.round((latestWeek.new_subscribers || 0) * bundlePotentialPct),
-      revenue: estimatedBundleSubs * bundleCurrentARPU,
-      arpu: bundleCurrentARPU,
-      isBundle: true,
-      baseTier: 'ad_free'
+      activeVisitors: estimatedVIPVisitors,
+      returnRate: (latestDay.return_rate || 0) * 1.15, // VIP typically has higher return rate
+      newVisitors: Math.round((latestDay.new_registrations || 0) * vipPotentialPct),
+      revenue: estimatedVIPVisitors * vipCurrentARPV,
+      arpv: vipCurrentARPV,
+      isVIP: true,
+      baseTier: 'premium_pass'
     };
   }
 
   // Regular tier handling
-  const weeklyData = await getWeeklyData(tier);
+  const dailyData = await getDailyData(tier);
 
-  if (!weeklyData || weeklyData.length === 0) {
+  if (!dailyData || dailyData.length === 0) {
     throw new Error(`No data available for tier: ${tier}. Please ensure data is loaded correctly.`);
   }
 
-  const latestWeek = weeklyData[weeklyData.length - 1];
+  const latestDay = dailyData[dailyData.length - 1];
 
-  if (!latestWeek) {
-    throw new Error(`Unable to retrieve latest week data for tier: ${tier}`);
+  if (!latestDay) {
+    throw new Error(`Unable to retrieve latest day data for tier: ${tier}`);
   }
 
-  // Calculate ARPU if not available or is zero
-  let arpu = latestWeek.arpu || 0;
-  if (arpu === 0 && latestWeek.revenue && latestWeek.active_subscribers > 0) {
-    arpu = latestWeek.revenue / latestWeek.active_subscribers;
-    console.log(`Calculated ARPU from revenue/subscribers: ${arpu.toFixed(2)}`);
+  // Calculate ARPV if not available or is zero
+  let arpv = latestDay.arpv || 0;
+  if (arpv === 0 && latestDay.daily_revenue && latestDay.daily_visitors > 0) {
+    arpv = latestDay.daily_revenue / latestDay.daily_visitors;
+    console.log(`Calculated ARPV from revenue/visitors: ${arpv.toFixed(2)}`);
   }
 
   return {
-    activeSubscribers: latestWeek.active_subscribers || 0,
-    churnRate: latestWeek.churn_rate || 0,
-    newSubscribers: latestWeek.new_subscribers || 0,
-    revenue: latestWeek.revenue || 0,
-    arpu: arpu,
-    isBundle: false
+    activeVisitors: latestDay.daily_visitors || 0,
+    returnRate: latestDay.return_rate || 0,
+    newVisitors: latestDay.new_registrations || 0,
+    revenue: latestDay.daily_revenue || 0,
+    arpv: arpv,
+    isVIP: false
   };
 }
 
 /**
  * Calculate revenue impact
- * @param {number} forecastedSubs - Forecasted subscriber count
+ * @param {number} forecastedVisitors - Forecasted visitor count
  * @param {number} newPrice - New price
- * @param {number} baselineSubs - Baseline subscriber count
+ * @param {number} baselineVisitors - Baseline visitor count
  * @param {number} currentPrice - Current price
  * @returns {Object} Revenue impact
  */
-function calculateRevenueImpact(forecastedSubs, newPrice, baselineSubs, currentPrice) {
-  // Monthly revenue = subscribers × price
-  const forecastedRevenue = forecastedSubs * newPrice;
-  const baselineRevenue = baselineSubs * currentPrice;
+function calculateRevenueImpact(forecastedVisitors, newPrice, baselineVisitors, currentPrice) {
+  // Daily revenue = visitors × price
+  const forecastedRevenue = forecastedVisitors * newPrice;
+  const baselineRevenue = baselineVisitors * currentPrice;
   const change = forecastedRevenue - baselineRevenue;
   const percentChange = (change / baselineRevenue) * 100;
 
@@ -395,24 +394,24 @@ function calculateRevenueImpact(forecastedSubs, newPrice, baselineSubs, currentP
 /**
  * Generate time series forecast
  * @param {Object} demandForecast - Demand forecast object
- * @param {Object} churnForecast - Churn forecast object
- * @param {Object} acquisitionForecast - Acquisition forecast object
+ * @param {Object} returnRateForecast - Return rate forecast object
+ * @param {Object} newVisitsForecast - New visits forecast object
  * @param {number} newPrice - New price
  * @param {number} months - Number of months to forecast
  * @returns {Array} Time series data
  */
-function generateTimeSeries(demandForecast, churnForecast, acquisitionForecast, newPrice, months) {
+function generateTimeSeries(demandForecast, returnRateForecast, newVisitsForecast, newPrice, months) {
   const series = [];
-  let currentSubs = demandForecast.baseSubscribers;
+  let currentVisitors = demandForecast.baseVisitors;
 
   for (let month = 0; month <= months; month++) {
     // Month 0 is baseline
     if (month === 0) {
       series.push({
         month: 0,
-        subscribers: currentSubs,
-        revenue: currentSubs * (newPrice / (1 + (demandForecast.priceChangePct / 100))),
-        churn_rate: churnForecast.baselineChurn
+        visitors: currentVisitors,
+        revenue: currentVisitors * (newPrice / (1 + (demandForecast.priceChangePct / 100))),
+        return_rate: returnRateForecast.baselineChurn
       });
       continue;
     }
@@ -420,22 +419,22 @@ function generateTimeSeries(demandForecast, churnForecast, acquisitionForecast, 
     // Apply changes gradually over time
     const progressFactor = Math.min(month / 3, 1); // Full effect after 3 months
 
-    // Calculate subscriber change
-    const totalChange = demandForecast.forecastedSubscribers - demandForecast.baseSubscribers;
-    currentSubs = demandForecast.baseSubscribers + (totalChange * progressFactor);
+    // Calculate visitor change
+    const totalChange = demandForecast.forecastedVisitors - demandForecast.baseVisitors;
+    currentVisitors = demandForecast.baseVisitors + (totalChange * progressFactor);
 
-    // Calculate churn for this month
-    const churnChange = churnForecast.forecastedChurn - churnForecast.baselineChurn;
-    const monthChurnRate = churnForecast.baselineChurn + (churnChange * progressFactor);
+    // Calculate return rate for this month
+    const returnRateChange = returnRateForecast.forecastedChurn - returnRateForecast.baselineChurn;
+    const monthReturnRate = returnRateForecast.baselineChurn + (returnRateChange * progressFactor);
 
     // Revenue
-    const revenue = currentSubs * newPrice;
+    const revenue = currentVisitors * newPrice;
 
     series.push({
       month,
-      subscribers: Math.round(currentSubs),
+      visitors: Math.round(currentVisitors),
       revenue: Math.round(revenue),
-      churn_rate: monthChurnRate
+      return_rate: monthReturnRate
     });
   }
 
@@ -459,7 +458,7 @@ function generateTimeSeriesForSegment(baseline, forecasted, forecastedChurn, bas
     if (month === 0) {
       series.push({
         month: 0,
-        subscribers: Math.round(baseline.subscribers),
+        visitors: Math.round(baseline.visitors),
         revenue: Math.round(baseline.revenue),
         churn_rate: baselineChurn
       });
@@ -469,9 +468,9 @@ function generateTimeSeriesForSegment(baseline, forecasted, forecastedChurn, bas
     // Apply changes gradually over time
     const progressFactor = Math.min(month / 3, 1); // Full effect after 3 months
 
-    // Calculate subscriber change
-    const totalSubsChange = forecasted.subscribers - baseline.subscribers;
-    const currentSubs = baseline.subscribers + (totalSubsChange * progressFactor);
+    // Calculate visitor change
+    const totalVisitorsChange = forecasted.visitors - baseline.visitors;
+    const currentVisitors = baseline.visitors + (totalVisitorsChange * progressFactor);
 
     // Calculate revenue change
     const totalRevenueChange = forecasted.revenue - baseline.revenue;
@@ -483,7 +482,7 @@ function generateTimeSeriesForSegment(baseline, forecasted, forecastedChurn, bas
 
     series.push({
       month,
-      subscribers: Math.round(currentSubs),
+      visitors: Math.round(currentVisitors),
       revenue: Math.round(currentRevenue),
       churn_rate: monthChurnRate
     });
@@ -495,21 +494,21 @@ function generateTimeSeriesForSegment(baseline, forecasted, forecastedChurn, bas
 /**
  * Generate warnings based on scenario results
  * @param {Object} scenario - Scenario configuration
- * @param {Object} churnForecast - Churn forecast
+ * @param {Object} returnRateForecast - Return rate forecast
  * @param {Object} demandForecast - Demand forecast
  * @returns {Array} Array of warning messages
  */
-function generateWarnings(scenario, churnForecast, demandForecast) {
+function generateWarnings(scenario, returnRateForecast, demandForecast) {
   const warnings = [];
 
-  // Warn if churn increases significantly
-  if (churnForecast.changePercent > 10) {
-    warnings.push(`Churn rate increases by ${churnForecast.changePercent.toFixed(1)}% (exceeds 10% threshold)`);
+  // Warn if return rate decreases significantly (inverse of churn increasing)
+  if (returnRateForecast.changePercent < -10) {
+    warnings.push(`Return rate decreases by ${Math.abs(returnRateForecast.changePercent).toFixed(1)}% (exceeds 10% threshold)`);
   }
 
-  // Warn if subscriber loss is significant
+  // Warn if visitor loss is significant
   if (demandForecast.percentChange < -5) {
-    warnings.push(`Subscriber base decreases by ${Math.abs(demandForecast.percentChange).toFixed(1)}% (exceeds 5% threshold)`);
+    warnings.push(`Visitor base decreases by ${Math.abs(demandForecast.percentChange).toFixed(1)}% (exceeds 5% threshold)`);
   }
 
   // Warn about large price increases
@@ -582,15 +581,15 @@ export function rankScenarios(results, objective = 'balanced') {
         break;
 
       case 'growth':
-        // Maximize subscriber growth
-        score = result.delta.subscribers_pct;
+        // Maximize visitor growth
+        score = result.delta.visitors_pct;
         break;
 
       case 'balanced':
-        // Balance revenue and subscriber growth
-        score = (result.delta.revenue_pct * 0.6) + (result.delta.subscribers_pct * 0.4);
-        // Penalize high churn
-        if (result.delta.churn_rate_pct > 10) {
+        // Balance revenue and visitor growth
+        score = (result.delta.revenue_pct * 0.6) + (result.delta.visitors_pct * 0.4);
+        // Penalize low return rate (high visitor turnover)
+        if (result.delta.return_rate_pct < -10) {
           score -= 10;
         }
         break;
@@ -617,21 +616,21 @@ export function exportScenarioResult(result) {
     scenario_name: result.scenario_name,
     elasticity: result.elasticity,
 
-    baseline_subscribers: result.baseline.subscribers,
+    baseline_visitors: result.baseline.visitors,
     baseline_revenue: result.baseline.revenue,
-    baseline_churn_rate: result.baseline.churn_rate,
-    baseline_arpu: result.baseline.arpu,
+    baseline_return_rate: result.baseline.return_rate,
+    baseline_arpv: result.baseline.arpv,
 
-    forecasted_subscribers: result.forecasted.subscribers,
+    forecasted_visitors: result.forecasted.visitors,
     forecasted_revenue: result.forecasted.revenue,
-    forecasted_churn_rate: result.forecasted.churn_rate,
-    forecasted_arpu: result.forecasted.arpu,
+    forecasted_return_rate: result.forecasted.return_rate,
+    forecasted_arpv: result.forecasted.arpv,
 
-    delta_subscribers: result.delta.subscribers,
-    delta_subscribers_pct: result.delta.subscribers_pct,
+    delta_visitors: result.delta.visitors,
+    delta_visitors_pct: result.delta.visitors_pct,
     delta_revenue: result.delta.revenue,
     delta_revenue_pct: result.delta.revenue_pct,
-    delta_churn_rate: result.delta.churn_rate,
+    delta_return_rate: result.delta.return_rate,
 
     warnings: result.warnings.join('; '),
     constraints_met: result.constraints_met
@@ -675,8 +674,8 @@ export async function simulateSegmentScenario(scenario, options = {}) {
 
     // Calculate direct impact on targeted segment
     const demandChangePct = segmentElasticity * priceChangePct;
-    const forecastedSubscribers = Math.round(segmentBaseline.subscribers * (1 + demandChangePct));
-    const forecastedRevenue = forecastedSubscribers * newPrice;
+    const forecastedVisitors = Math.round(segmentBaseline.visitors * (1 + demandChangePct));
+    const forecastedRevenue = forecastedVisitors * newPrice;
 
     // Estimate churn impact
     const churnMultiplier = 1 + (segmentElasticity * 0.15 * priceChangePct); // 15% of elasticity affects churn
@@ -686,14 +685,14 @@ export async function simulateSegmentScenario(scenario, options = {}) {
     const segmentImpact = {
       baseline: segmentBaseline,
       forecasted: {
-        subscribers: forecastedSubscribers,
+        visitors: forecastedVisitors,
         revenue: forecastedRevenue,
         churn_rate: forecastedChurn,
         arpu: newPrice
       },
       delta: {
-        subscribers: forecastedSubscribers - segmentBaseline.subscribers,
-        subscribers_pct: demandChangePct * 100,
+        visitors: forecastedVisitors - segmentBaseline.visitors,
+        visitors_pct: demandChangePct * 100,
         revenue: forecastedRevenue - segmentBaseline.revenue,
         revenue_pct: ((forecastedRevenue - segmentBaseline.revenue) / segmentBaseline.revenue) * 100,
         churn_rate: forecastedChurn - segmentBaseline.churn_rate,
@@ -708,7 +707,7 @@ export async function simulateSegmentScenario(scenario, options = {}) {
       targetSegment,
       priceChangePct,
       demandChangePct,
-      segmentBaseline.subscribers
+      segmentBaseline.visitors
     );
 
     // Calculate tier-level totals including spillovers (use segmentTier for data lookups)
@@ -733,8 +732,8 @@ export async function simulateSegmentScenario(scenario, options = {}) {
     if (forecastedChurn > 0.20) {
       warnings.push(`High churn risk: ${(forecastedChurn * 100).toFixed(1)}%`);
     }
-    if (spilloverEffects.total_migration > segmentBaseline.subscribers * 0.15) {
-      warnings.push(`Significant spillover effects: ~${spilloverEffects.total_migration.toLocaleString()} subscribers may migrate`);
+    if (spilloverEffects.total_migration > segmentBaseline.visitors * 0.15) {
+      warnings.push(`Significant spillover effects: ~${spilloverEffects.total_migration.toLocaleString()} visitors may migrate`);
     }
 
     // Generate time series forecast for tier-level totals (12 months)
@@ -882,25 +881,25 @@ async function getSegmentBaseline(tier, segmentId, axis) {
   console.log(`Found ${matchingSegments.length} matching segments for ${segmentId}`);
 
   // Aggregate across matching segments
-  const totalSubscribers = matchingSegments.reduce((sum, s) =>
-    sum + parseInt(s.subscriber_count || 0), 0);
+  const totalVisitors = matchingSegments.reduce((sum, s) =>
+    sum + parseInt(s.visitor_count || 0), 0);
 
   const weightedChurnRate = matchingSegments.reduce((sum, s) => {
-    const subs = parseInt(s.subscriber_count || 0);
+    const subs = parseInt(s.visitor_count || 0);
     const churn = parseFloat(s.avg_churn_rate || 0);
     return sum + (churn * subs);
-  }, 0) / totalSubscribers;
+  }, 0) / totalVisitors;
 
   const weightedArpu = matchingSegments.reduce((sum, s) => {
-    const subs = parseInt(s.subscriber_count || 0);
+    const subs = parseInt(s.visitor_count || 0);
     const arpu = parseFloat(s.avg_arpu || 0);
     return sum + (arpu * subs);
-  }, 0) / totalSubscribers;
+  }, 0) / totalVisitors;
 
-  const revenue = totalSubscribers * weightedArpu;
+  const revenue = totalVisitors * weightedArpu;
 
   return {
-    subscribers: totalSubscribers,
+    visitors: totalVisitors,
     churn_rate: weightedChurnRate,
     arpu: weightedArpu,
     revenue,
@@ -914,10 +913,10 @@ async function getSegmentBaseline(tier, segmentId, axis) {
  * @param {string} targetSegment - Target segment ID
  * @param {number} priceChangePct - Price change percentage
  * @param {number} demandChangePct - Demand change percentage for target
- * @param {number} targetSubscribers - Target segment subscribers
+ * @param {number} targetVisitors - Target segment visitors
  * @returns {Promise<Object>} Spillover effects
  */
-async function estimateSpilloverEffects(tier, targetSegment, priceChangePct, demandChangePct, targetSubscribers) {
+async function estimateSpilloverEffects(tier, targetSegment, priceChangePct, demandChangePct, targetVisitors) {
   if (!window.segmentEngine) {
     return { details: [], total_migration: 0, net_tier_change: 0 };
   }
@@ -928,7 +927,7 @@ async function estimateSpilloverEffects(tier, targetSegment, priceChangePct, dem
   // Simplified migration model: some churned customers move to other segments
   // Migration rate is proportional to demand change, capped at 10%
   const migrationRate = Math.min(Math.abs(demandChangePct) * 0.25, 0.10); // Max 10% migration
-  const totalMigrants = Math.round(targetSubscribers * migrationRate);
+  const totalMigrants = Math.round(targetVisitors * migrationRate);
 
   // Distribute migrants across other segments (weighted by their size)
   const otherSegments = allSegments.filter(s =>
@@ -937,32 +936,32 @@ async function estimateSpilloverEffects(tier, targetSegment, priceChangePct, dem
     s.monetization !== targetSegment
   );
 
-  const totalOtherSubs = otherSegments.reduce((sum, s) =>
-    sum + parseInt(s.subscriber_count || 0), 0);
+  const totalOtherVisitors = otherSegments.reduce((sum, s) =>
+    sum + parseInt(s.visitor_count || 0), 0);
 
   for (const seg of otherSegments) {
-    const segSubs = parseInt(seg.subscriber_count || 0);
-    const weight = segSubs / totalOtherSubs;
+    const segVisitors = parseInt(seg.visitor_count || 0);
+    const weight = segVisitors / totalOtherVisitors;
 
     // Migration direction: price increase -> outflow, price decrease -> inflow
     const direction = priceChangePct > 0 ? -1 : 1;
-    const deltaSubscribers = Math.round(totalMigrants * weight * direction);
+    const deltaVisitors = Math.round(totalMigrants * weight * direction);
 
-    if (deltaSubscribers !== 0) {
+    if (deltaVisitors !== 0) {
       spillovers.push({
         compositeKey: seg.compositeKey,
-        baseline_subscribers: segSubs,
-        delta_subscribers: deltaSubscribers,
-        delta_pct: (deltaSubscribers / segSubs) * 100
+        baseline_visitors: segVisitors,
+        delta_visitors: deltaVisitors,
+        delta_pct: (deltaVisitors / segVisitors) * 100
       });
     }
   }
 
   // Sort by absolute impact
-  spillovers.sort((a, b) => Math.abs(b.delta_subscribers) - Math.abs(a.delta_subscribers));
+  spillovers.sort((a, b) => Math.abs(b.delta_visitors) - Math.abs(a.delta_visitors));
 
   // Calculate net tier change from spillover
-  const netTierChange = spillovers.reduce((sum, s) => sum + s.delta_subscribers, 0);
+  const netTierChange = spillovers.reduce((sum, s) => sum + s.delta_visitors, 0);
 
   return {
     details: spillovers.slice(0, 10), // Top 10 affected segments
@@ -985,47 +984,47 @@ async function calculateTierTotals(tier, impactData) {
   const allSegments = window.segmentEngine.getSegmentsForTier(tier);
 
   // Calculate baseline tier totals
-  const baselineSubscribers = allSegments.reduce((sum, s) =>
-    sum + parseInt(s.subscriber_count || 0), 0);
+  const baselineVisitors = allSegments.reduce((sum, s) =>
+    sum + parseInt(s.visitor_count || 0), 0);
 
   const baselineRevenue = allSegments.reduce((sum, s) => {
-    const subs = parseInt(s.subscriber_count || 0);
+    const subs = parseInt(s.visitor_count || 0);
     const arpu = parseFloat(s.avg_arpu || 0);
     return sum + (subs * arpu);
   }, 0);
 
   // Calculate forecasted tier totals
-  const targetSegmentDelta = impactData.segmentForecasted.subscribers - impactData.segmentBaseline.subscribers;
+  const targetSegmentDelta = impactData.segmentForecasted.visitors - impactData.segmentBaseline.visitors;
   const spilloverDelta = impactData.spilloverEffects.reduce((sum, s) =>
-    sum + (s.delta_subscribers || 0), 0);
+    sum + (s.delta_visitors || 0), 0);
 
-  const forecastedSubscribers = baselineSubscribers + targetSegmentDelta + spilloverDelta;
+  const forecastedVisitors = baselineVisitors + targetSegmentDelta + spilloverDelta;
 
   // Revenue calculation (simplified)
   const targetRevenueChange = impactData.segmentForecasted.revenue - impactData.segmentBaseline.revenue;
   const spilloverRevenueChange = impactData.spilloverEffects.reduce((sum, s) => {
-    // Assume migrated subscribers keep similar ARPU
-    const avgArpu = baselineRevenue / baselineSubscribers;
-    return sum + (s.delta_subscribers * avgArpu);
+    // Assume migrated visitors keep similar ARPU
+    const avgArpu = baselineRevenue / baselineVisitors;
+    return sum + (s.delta_visitors * avgArpu);
   }, 0);
 
   const forecastedRevenue = baselineRevenue + targetRevenueChange + spilloverRevenueChange;
-  const forecastedArpu = forecastedRevenue / forecastedSubscribers;
+  const forecastedArpu = forecastedRevenue / forecastedVisitors;
 
   return {
     baseline: {
-      subscribers: baselineSubscribers,
+      visitors: baselineVisitors,
       revenue: baselineRevenue,
-      arpu: baselineRevenue / baselineSubscribers
+      arpu: baselineRevenue / baselineVisitors
     },
     forecasted: {
-      subscribers: forecastedSubscribers,
+      visitors: forecastedVisitors,
       revenue: forecastedRevenue,
       arpu: forecastedArpu
     },
     delta: {
-      subscribers: forecastedSubscribers - baselineSubscribers,
-      subscribers_pct: ((forecastedSubscribers - baselineSubscribers) / baselineSubscribers) * 100,
+      visitors: forecastedVisitors - baselineVisitors,
+      visitors_pct: ((forecastedVisitors - baselineVisitors) / baselineVisitors) * 100,
       revenue: forecastedRevenue - baselineRevenue,
       revenue_pct: ((forecastedRevenue - baselineRevenue) / baselineRevenue) * 100
     }
@@ -1090,11 +1089,11 @@ export async function simulateScenarioWithPyodide(scenario, options = {}) {
     // Calculate forecasted KPIs using Python model outputs
     // Acquisition adds are absolute numbers (e.g., 5000 new subs)
     // Churn rate is a fraction (e.g., 0.05 = 5%)
-    const churnedSubs = baseline.activeSubscribers * churnResult['0-4 Weeks'].churn_rate;
-    const netAdds = acquisitionResult.predicted_adds - churnedSubs;
+    const churnedVisitors = baseline.activeVisitors * churnResult['0-4 Weeks'].churn_rate;
+    const netAdds = acquisitionResult.predicted_adds - churnedVisitors;
 
     const forecasted = {
-      activeSubscribers: baseline.activeSubscribers + netAdds,
+      activeVisitors: baseline.activeVisitors + netAdds,
       revenue: baseline.revenue * (1 + (pythonScenario.price_change_pct / 100)),
       arpu: scenario.config.new_price,
       churnRate: churnResult['0-4 Weeks'].churn_rate,
@@ -1104,8 +1103,8 @@ export async function simulateScenarioWithPyodide(scenario, options = {}) {
 
     // Calculate deltas
     const delta = {
-      subscribers: forecasted.activeSubscribers - baseline.activeSubscribers,
-      subscribers_pct: ((forecasted.activeSubscribers - baseline.activeSubscribers) / baseline.activeSubscribers) * 100,
+      visitors: forecasted.activeVisitors - baseline.activeVisitors,
+      visitors_pct: ((forecasted.activeVisitors - baseline.activeVisitors) / baseline.activeVisitors) * 100,
       revenue: forecasted.revenue - baseline.revenue,
       revenue_pct: ((forecasted.revenue - baseline.revenue) / baseline.revenue) * 100,
       arpu: forecasted.arpu - baseline.arpu,

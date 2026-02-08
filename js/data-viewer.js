@@ -3,83 +3,76 @@
  * Handles loading, displaying, and exporting CSV datasets only
  */
 
+import { showAlert } from './utils.js';
+
 // Dataset configuration - CSV files only
 const DATASETS = {
-  subscribers: {
-    title: 'Subscribers',
-    description: 'Individual subscriber-level data with acquisition, behavior, engagement, and churn information',
-    file: './data/subscribers.csv',
+  visitors: {
+    title: 'Visitors',
+    description: 'Individual visitor-level data with registration, behavior, engagement, and loyalty information',
+    file: './data/visitors.csv',
     recordCount: 50000,
     dateRange: '2022-01-01 to 2024-12-30',
     category: 'Core Data',
     icon: 'bi-people'
   },
-  weekly_aggregated: {
-    title: 'Weekly Aggregated',
-    description: 'Pre-aggregated weekly KPIs by tier with external factors for time series modeling',
-    file: './data/weekly_aggregated.csv',
-    recordCount: 471,
-    dateRange: '2022-01-02 to 2024-12-29',
+  daily_aggregated: {
+    title: 'Daily Aggregated',
+    description: 'Pre-aggregated daily KPIs by membership tier with seasonal factors for time series modeling',
+    file: './data/daily_aggregated.csv',
+    recordCount: 2193,
+    dateRange: '2023-01-01 to 2024-12-31',
     category: 'Core Data',
     icon: 'bi-graph-up'
   },
-  pricing_history: {
-    title: 'Pricing History',
-    description: 'Historical pricing changes, promotional periods, and effective prices by tier',
-    file: './data/pricing_history.csv',
-    recordCount: 471,
-    dateRange: '2022-01-02 to 2024-12-29',
+  membership_tiers: {
+    title: 'Membership Tiers',
+    description: 'Historical pricing changes, promotional periods, and effective prices by pass tier',
+    file: './data/membership_tiers.csv',
+    recordCount: 21,
+    dateRange: '2023-01-01 to 2024-12-31',
     category: 'Pricing Data',
     icon: 'bi-tag'
   },
   external_factors: {
     title: 'External Factors',
-    description: 'Macroeconomic indicators and competitor pricing data',
+    description: 'Weather patterns, school schedules, and competitor pricing data',
     file: './data/external_factors.csv',
     recordCount: 157,
     dateRange: '2022-01-02 to 2024-12-29',
     category: 'External Data',
     icon: 'bi-globe'
   },
-  marketing_spend: {
-    title: 'Marketing Spend',
-    description: 'Marketing spend by channel for acquisition analysis',
-    file: './data/marketing_spend.csv',
-    recordCount: 157,
-    dateRange: '2022-01-02 to 2024-12-29',
-    category: 'Marketing Data',
-    icon: 'bi-megaphone'
-  },
-  content_releases: {
-    title: 'Content Releases',
-    description: 'Content release calendar for content-driven demand modeling',
-    file: './data/content_releases.csv',
-    recordCount: 157,
-    dateRange: '2022-01-02 to 2024-12-29',
-    category: 'Content Data',
-    icon: 'bi-play-circle'
+  attraction_openings: {
+    title: 'Attraction Openings',
+    description: 'New attraction launches, seasonal events, and park expansions',
+    file: './data/attraction_openings.csv',
+    recordCount: 14,
+    dateRange: '2023-01-15 to 2024-10-15',
+    category: 'Event Data',
+    icon: 'bi-star'
   },
   event_calendar: {
     title: 'Event Calendar',
-    description: 'Unified event log with price changes, promotions, and tentpole content releases',
+    description: 'Unified event log with holidays, special events, and seasonal promotions',
     file: './data/event_calendar.csv',
-    recordCount: 31,
-    dateRange: '2022-01-02 to 2024-06-16',
+    recordCount: 41,
+    dateRange: '2023-01-01 to 2024-12-31',
     category: 'Event Data',
     icon: 'bi-calendar-event'
   },
-  customer_segments: {
-    title: 'Customer Segments',
-    description: '375 behavioral segments across 3-axis framework (Monetization, Engagement, Acquisition)',
-    file: './data/customer_segments.csv',
-    recordCount: 375,
+  visitor_segments: {
+    title: 'Visitor Segments',
+    description: '375 behavioral segments across 3-axis framework (Visit Frequency, Party Size, Price Sensitivity)',
+    file: './data/visitor_segments.csv',
+    recordCount: 50000,
     dateRange: 'N/A',
     category: 'Segmentation Data',
     icon: 'bi-diagram-3'
   },
   segment_kpis: {
     title: 'Segment KPIs',
-    description: 'Segment-level KPIs including ARPU, churn rate, and engagement metrics',
+    description: 'Segment-level KPIs including ARPV, return rate, and engagement metrics',
     file: './data/segment_kpis.csv',
     recordCount: 375,
     dateRange: 'Current snapshot',
@@ -90,12 +83,10 @@ const DATASETS = {
 
 // Group datasets by category
 const CATEGORIES = {
-  'Core Data': ['subscribers', 'weekly_aggregated'],
-  'Pricing Data': ['pricing_history'],
-  'Event Data': ['event_calendar'],
-  'Segmentation Data': ['customer_segments', 'segment_kpis'],
-  'Marketing Data': ['marketing_spend'],
-  'Content Data': ['content_releases'],
+  'Core Data': ['visitors', 'daily_aggregated'],
+  'Pricing Data': ['membership_tiers'],
+  'Event Data': ['event_calendar', 'attraction_openings'],
+  'Segmentation Data': ['visitor_segments', 'segment_kpis'],
   'External Data': ['external_factors']
 };
 
@@ -524,7 +515,7 @@ function updateDatasetInfo() {
  */
 function exportData(format) {
   if (!currentData || currentData.length === 0) {
-    alert('No data to export');
+    showAlert('No data to export', 'warning');
     return;
   }
 

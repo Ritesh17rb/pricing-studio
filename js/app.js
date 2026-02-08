@@ -22,6 +22,7 @@ import { pyodideBridge } from './pyodide-bridge.js';
 import { initializeEventCalendar } from './event-calendar.js';
 import { rankScenarios, getObjectiveDescription } from './decision-engine.js';
 import { exportToPDF, exportToXLSX } from './decision-pack.js';
+import { showAlert } from './utils.js';
 
 // Global state
 let allScenarios = [];
@@ -80,7 +81,7 @@ function formatPercent(num, decimals = 1) {
   if (num === null || num === undefined || !Number.isFinite(num)) {
     return 'N/A';
   }
-  return `${num.toFixed(decimals)}%`;
+  return `${(num * 100).toFixed(decimals)}%`;
 }
 
 function getModelTypeFromTabId(tabId) {
@@ -294,31 +295,58 @@ async function loadKPIs() {
   try {
     const dailyData = await getDailyData('all');
     const latestDay = {};
+    const previousWeekDay = {};
 
-    // Get latest day for each tier
+    // Get latest day and previous week (7 days ago) for each tier
     ['standard_pass', 'premium_pass', 'vip_pass'].forEach(tier => {
       const tierData = dailyData.filter(d => d.membership_tier === tier);
       latestDay[tier] = tierData[tierData.length - 1];
+      // Get data from 7 days ago for week-over-week comparison
+      previousWeekDay[tier] = tierData.length >= 8 ? tierData[tierData.length - 8] : null;
     });
 
-    // Calculate totals
+    // Calculate current totals
     const totalVisitors = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_visitors || 0), 0);
-    const totalRevenue = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_revenue || 0), 0) * 30; // Daily to monthly estimate
-    const avgARPV = totalRevenue / (totalVisitors * 30);
+    const totalDailyRevenue = Object.values(latestDay).reduce((sum, d) => sum + (d.daily_revenue || 0), 0);
+    const totalRevenue = totalDailyRevenue * 30; // Daily to monthly estimate
+    const avgARPV = totalDailyRevenue / totalVisitors; // FIXED: Don't divide by 30 again
     const avgReturnRate = Object.values(latestDay).reduce((sum, d) => sum + (d.return_rate || 0), 0) / 3;
 
+    // Calculate previous week totals for comparison
+    const prevTotalVisitors = Object.values(previousWeekDay).reduce((sum, d) => sum + (d?.daily_visitors || 0), 0);
+    const prevTotalDailyRevenue = Object.values(previousWeekDay).reduce((sum, d) => sum + (d?.daily_revenue || 0), 0);
+    const prevTotalRevenue = prevTotalDailyRevenue * 30;
+    const prevAvgARPV = prevTotalVisitors > 0 ? prevTotalDailyRevenue / prevTotalVisitors : 0;
+    const prevAvgReturnRate = Object.values(previousWeekDay).reduce((sum, d) => sum + (d?.return_rate || 0), 0) / 3;
+
     // Update KPI cards
-    document.getElementById('kpi-subscribers').textContent = formatNumber(totalVisitors);
+    document.getElementById('kpi-visitors').textContent = formatNumber(totalVisitors);
     document.getElementById('kpi-revenue').textContent = formatCurrency(totalRevenue);
     document.getElementById('kpi-arpu').textContent = formatCurrency(avgARPV);
-    // avgReturnRate is already a decimal (0.85 = 85%), formatPercent will multiply by 100
     document.getElementById('kpi-return').textContent = formatPercent(avgReturnRate);
 
-    // Note: Change indicators would require comparing to previous day
-    document.getElementById('kpi-subscribers-change').textContent = '+2.3%';
-    document.getElementById('kpi-revenue-change').textContent = '+1.8%';
-    document.getElementById('kpi-arpu-change').textContent = '$4.50';
-    document.getElementById('kpi-return-change').textContent = '82.5%';
+    // Calculate and display week-over-week changes
+    const visitorsChange = prevTotalVisitors > 0 ? ((totalVisitors - prevTotalVisitors) / prevTotalVisitors) * 100 : 0;
+    const revenueChange = prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
+    const arpvChange = avgARPV - prevAvgARPV;
+    const returnRateChange = (avgReturnRate - prevAvgReturnRate) * 100; // Convert to percentage points
+
+    // Update change indicators with proper formatting and CSS classes
+    const visitorsChangeEl = document.getElementById('kpi-visitors-change');
+    visitorsChangeEl.textContent = (visitorsChange >= 0 ? '+' : '') + visitorsChange.toFixed(1) + '%';
+    visitorsChangeEl.className = visitorsChange >= 0 ? 'text-success' : 'text-danger';
+
+    const revenueChangeEl = document.getElementById('kpi-revenue-change');
+    revenueChangeEl.textContent = (revenueChange >= 0 ? '+' : '') + revenueChange.toFixed(1) + '%';
+    revenueChangeEl.className = revenueChange >= 0 ? 'text-success' : 'text-danger';
+
+    const arpvChangeEl = document.getElementById('kpi-arpu-change');
+    arpvChangeEl.textContent = (arpvChange >= 0 ? '+' : '') + formatCurrency(Math.abs(arpvChange));
+    arpvChangeEl.className = arpvChange >= 0 ? 'text-success' : 'text-danger';
+
+    const returnChangeEl = document.getElementById('kpi-return-change');
+    returnChangeEl.textContent = (returnRateChange >= 0 ? '+' : '') + returnRateChange.toFixed(1) + 'pp';
+    returnChangeEl.className = returnRateChange >= 0 ? 'text-success' : 'text-danger';
 
   } catch (error) {
     console.error('Error loading KPIs:', error);
@@ -520,12 +548,12 @@ async function initializeChatContext() {
           ]
         },
         tierMix: currentResult ? {
-          description: "Baseline vs Forecasted subscriber distribution across tiers",
+          description: "Baseline vs Forecasted visitor distribution across tiers",
           baseline: currentResult.baseline,
           forecasted: currentResult.forecasted
         } : null,
         forecast: currentResult ? {
-          description: "12-month subscriber forecast with 90% confidence intervals",
+          description: "12-month visitor forecast with 90% confidence intervals",
           timeSeries: currentResult.time_series
         } : null
       }),
@@ -564,11 +592,11 @@ async function initializeChatContext() {
               forecasted: result.forecasted.revenue,
               baseline: result.baseline.revenue
             },
-            subscribers: {
-              change_pct: result.delta.subscribers_pct,
-              change_amount: result.delta.subscribers,
-              forecasted: result.forecasted.subscribers,
-              baseline: result.baseline.subscribers
+            visitors: {
+              change_pct: result.delta.visitors_pct,
+              change_amount: result.delta.visitors,
+              forecasted: result.forecasted.visitors,
+              baseline: result.baseline.visitors
             },
             churn: {
               change_pct: result.delta.churn_rate_pct,
@@ -584,7 +612,7 @@ async function initializeChatContext() {
 
           // Trade-offs
           tradeoffs: {
-            revenue_vs_subscribers: `${result.delta.revenue_pct >= 0 ? 'Gain' : 'Loss'} ${Math.abs(result.delta.revenue_pct).toFixed(1)}% revenue, ${result.delta.subscribers_pct >= 0 ? 'gain' : 'lose'} ${Math.abs(result.delta.subscribers_pct).toFixed(1)}% subscribers`,
+            revenue_vs_visitors: `${result.delta.revenue_pct >= 0 ? 'Gain' : 'Loss'} ${Math.abs(result.delta.revenue_pct).toFixed(1)}% revenue, ${result.delta.visitors_pct >= 0 ? 'gain' : 'lose'} ${Math.abs(result.delta.visitors_pct).toFixed(1)}% visitors`,
             price_sensitivity: result.elasticity < -2.0 ? 'High' : result.elasticity < -1.5 ? 'Medium' : 'Low'
           },
 
@@ -597,7 +625,7 @@ async function initializeChatContext() {
           // Time series forecast
           forecast_12m: result.time_series,
 
-          summary: `${result.scenario_name} analysis: Revenue ${result.delta.revenue_pct >= 0 ? 'increases' : 'decreases'} by ${Math.abs(result.delta.revenue_pct).toFixed(1)}% while subscribers ${result.delta.subscribers_pct >= 0 ? 'grow' : 'decline'} by ${Math.abs(result.delta.subscribers_pct).toFixed(1)}%. Churn ${result.delta.churn_rate_pct >= 0 ? 'increases' : 'decreases'} by ${Math.abs(result.delta.churn_rate_pct).toFixed(1)}%.`
+          summary: `${result.scenario_name} analysis: Revenue ${result.delta.revenue_pct >= 0 ? 'increases' : 'decreases'} by ${Math.abs(result.delta.revenue_pct).toFixed(1)}% while visitors ${result.delta.visitors_pct >= 0 ? 'grow' : 'decline'} by ${Math.abs(result.delta.visitors_pct).toFixed(1)}%. Churn ${result.delta.churn_rate_pct >= 0 ? 'increases' : 'decreases'} by ${Math.abs(result.delta.churn_rate_pct).toFixed(1)}%.`
         };
 
         return interpretation;
@@ -610,13 +638,13 @@ async function initializeChatContext() {
             strategy: 'Price increase on lower-elasticity tier',
             tier: 'ad_free',
             priceChange: +1.00,
-            rationale: 'Ad-Free has lower elasticity than Ad-Lite, so moderate increases reduce subscriber loss'
+            rationale: 'Ad-Free has lower elasticity than Ad-Lite, so moderate increases reduce visitor loss'
           },
-          grow_subscribers: {
+          grow_visitors: {
             strategy: 'Aggressive promotion on high-elasticity tier',
             tier: 'ad_supported',
             priceChange: -2.00,
-            rationale: 'Ad-Lite has highest elasticity (-2.1), so discounts drive maximum subscriber growth'
+            rationale: 'Ad-Lite has highest elasticity (-2.1), so discounts drive maximum visitor growth'
           },
           reduce_churn: {
             strategy: 'Moderate price decrease to improve value perception',
@@ -672,18 +700,18 @@ async function initializeChatContext() {
               `Ad-Lite (elasticity ${elasticityParams.tiers.ad_supported.base_elasticity}): Most price-sensitive`,
               `Ad-Free (elasticity ${elasticityParams.tiers.ad_free.base_elasticity}): Moderately price-sensitive`
             ],
-            insights: 'Use this to identify optimal price points for each tier. Flatter curves allow for price increases with minimal subscriber loss.'
+            insights: 'Use this to identify optimal price points for each tier. Flatter curves allow for price increases with minimal visitor loss.'
           },
           tier_mix: currentResult ? {
             name: 'Tier Mix: Baseline vs Forecasted',
-            description: 'Compares current vs forecasted subscriber distribution across tiers',
+            description: 'Compares current vs forecasted visitor distribution across tiers',
             baseline: currentResult.baseline,
             forecasted: currentResult.forecasted,
             interpretation: `Scenario "${currentResult.scenario_name}" shifts tier distribution. Revenue impact depends on tier ARPU differences.`
           } : null,
           forecast: currentResult ? {
             name: '12-Month Subscriber Forecast',
-            description: 'Projects subscriber count over 12 months with 90% confidence intervals',
+            description: 'Projects visitor count over 12 months with 90% confidence intervals',
             timeSeries: currentResult.time_series,
             interpretation: 'Confidence intervals widen over time due to increasing uncertainty. Use for medium-term planning (3-6 months most reliable).'
           } : null,
@@ -691,8 +719,8 @@ async function initializeChatContext() {
             name: 'Elasticity Heatmap by Cohort',
             description: 'Shows how price sensitivity varies by customer tenure and tier',
             interpretation: [
-              'New subscribers (0-3mo) are typically more price-sensitive',
-              'Tenured subscribers (12+mo) show lower elasticity (more loyal)',
+              'New visitors (0-3mo) are typically more price-sensitive',
+              'Tenured visitors (12+mo) show lower elasticity (more loyal)',
               'This guides targeted pricing strategies by segment'
             ]
           }
@@ -737,25 +765,25 @@ async function initializeChatContext() {
             id: r.scenario_id,
             name: r.scenario_name,
             revenue_pct: r.delta.revenue_pct,
-            subscribers_pct: r.delta.subscribers_pct,
+            visitors_pct: r.delta.visitors_pct,
             churn_pct: r.delta.churn_rate_pct,
             arpu_pct: r.delta.arpu_pct
           })),
 
           best_for: {
             revenue: results.reduce((best, r) => r.delta.revenue_pct > best.delta.revenue_pct ? r : best).scenario_name,
-            subscribers: results.reduce((best, r) => r.delta.subscribers_pct > best.delta.subscribers_pct ? r : best).scenario_name,
+            visitors: results.reduce((best, r) => r.delta.visitors_pct > best.delta.visitors_pct ? r : best).scenario_name,
             churn: results.reduce((best, r) => r.delta.churn_rate_pct < best.delta.churn_rate_pct ? r : best).scenario_name,
             arpu: results.reduce((best, r) => r.delta.arpu_pct > best.delta.arpu_pct ? r : best).scenario_name
           },
 
           tradeoffs: results.map(r => ({
             scenario: r.scenario_name,
-            tradeoff: `Revenue ${r.delta.revenue_pct >= 0 ? '+' : ''}${r.delta.revenue_pct.toFixed(1)}% vs Subscribers ${r.delta.subscribers_pct >= 0 ? '+' : ''}${r.delta.subscribers_pct.toFixed(1)}%`,
-            risk_level: r.warnings && r.warnings.length > 0 ? 'High' : Math.abs(r.delta.subscribers_pct) > 10 ? 'Medium' : 'Low'
+            tradeoff: `Revenue ${r.delta.revenue_pct >= 0 ? '+' : ''}${r.delta.revenue_pct.toFixed(1)}% vs Visitors ${r.delta.visitors_pct >= 0 ? '+' : ''}${r.delta.visitors_pct.toFixed(1)}%`,
+            risk_level: r.warnings && r.warnings.length > 0 ? 'High' : Math.abs(r.delta.visitors_pct) > 10 ? 'Medium' : 'Low'
           })),
 
-          recommendation: `Best scenario depends on business priority. For revenue: ${results.reduce((best, r) => r.delta.revenue_pct > best.delta.revenue_pct ? r : best).scenario_name}. For growth: ${results.reduce((best, r) => r.delta.subscribers_pct > best.delta.subscribers_pct ? r : best).scenario_name}.`
+          recommendation: `Best scenario depends on business priority. For revenue: ${results.reduce((best, r) => r.delta.revenue_pct > best.delta.revenue_pct ? r : best).scenario_name}. For growth: ${results.reduce((best, r) => r.delta.visitors_pct > best.delta.visitors_pct ? r : best).scenario_name}.`
         };
 
         return comparison;
@@ -1005,13 +1033,13 @@ function saveScenario() {
 
   updateScenarioComparisonUI();
 
-  alert(`Scenario "${activeResult.scenario_name}" saved! You can now compare it with other scenarios.`);
+  showAlert(`Scenario "${activeResult.scenario_name}" saved! You can now compare it with other scenarios.`, "success");
 }
 
 // Compare saved scenarios
 function compareScenarios() {
   if (savedScenarios.length < 2) {
-    alert('Please save at least 2 scenarios to compare.');
+    showAlert('Please save at least 2 scenarios to compare.', 'warning');
     return;
   }
 
@@ -1025,7 +1053,7 @@ function compareScenarios() {
 
     return {
       name: s.scenario_name || 'Unnamed Scenario',
-      subscribers_pct: s.delta?.subscribers_pct || 0,
+      visitors_pct: s.delta?.visitors_pct || 0,
       revenue_pct: s.delta?.revenue_pct || 0,
       arpu_pct: s.delta?.arpu_pct || 0,
       churn_pct: churnPct
@@ -1048,7 +1076,7 @@ function compareScenarios() {
       name: s.scenario_name || 'Unnamed Scenario',
       dimensions: {
         revenue: s.delta?.revenue_pct || 0,
-        growth: s.delta?.subscribers_pct || 0,
+        growth: s.delta?.visitors_pct || 0,
         arpu: s.delta?.arpu_pct || 0,
         churn: churnPct,
         cltv: cltvPct
@@ -1169,7 +1197,7 @@ async function saveEditedScenario() {
 
   // Validate constraints
   if (newPrice < scenario.constraints.min_price || newPrice > scenario.constraints.max_price) {
-    alert(`Price must be between $${scenario.constraints.min_price} and $${scenario.constraints.max_price}`);
+    showAlert(`Price must be between $${scenario.constraints.min_price} and $${scenario.constraints.max_price}`, "warning");
     return;
   }
 
@@ -1219,7 +1247,7 @@ async function saveEditedScenario() {
     }
   }
 
-  alert('Scenario updated! Click "Simulate" to see the new results.');
+  showAlert('Scenario updated! Click "Simulate" to see the new results.', 'info');
 }
 
 // Initialize Bootstrap popovers for ML methodology
@@ -1434,20 +1462,35 @@ function clearAllFilters() {
  * Render segment comparison table
  */
 function renderSegmentComparisonTable() {
-  const axis = document.getElementById('compare-axis-select').value;
-  const tier = document.getElementById('compare-tier-select').value;
-  const sortBy = document.getElementById('compare-sort-select').value;
+  const axisSelect = document.getElementById('compare-axis-select');
+  const tierSelect = document.getElementById('compare-tier-select');
+  const sortSelect = document.getElementById('compare-sort-select');
+
+  if (!axisSelect || !tierSelect || !sortSelect) {
+    console.error('Segment comparison controls not found in DOM');
+    return;
+  }
+
+  const axis = axisSelect.value;
+  const tier = tierSelect.value;
+  const sortBy = sortSelect.value;
 
   // Get segments with cohort adjustments already applied
   const segments = window.segmentEngine.getSegmentsForTier(tier);
+
+  if (!segments || segments.length === 0) {
+    console.error('No segments available for tier:', tier);
+    return;
+  }
+
   const axisSegments = [...new Set(segments.map(s => s[axis]))];
 
   // Aggregate by axis
   const comparisonData = axisSegments.map(segmentId => {
     const matching = segments.filter(s => s[axis] === segmentId);
-    const totalSubs = matching.reduce((sum, s) => sum + parseInt(s.subscriber_count), 0);
-    const avgChurn = matching.reduce((sum, s) => sum + (parseFloat(s.avg_churn_rate) * parseInt(s.subscriber_count)), 0) / totalSubs;
-    const avgArpu = matching.reduce((sum, s) => sum + (parseFloat(s.avg_arpu) * parseInt(s.subscriber_count)), 0) / totalSubs;
+    const totalSubs = matching.reduce((sum, s) => sum + parseInt(s.visitor_count), 0);
+    const avgChurn = matching.reduce((sum, s) => sum + (parseFloat(s.avg_return_rate) * parseInt(s.visitor_count)), 0) / totalSubs;
+    const avgArpu = matching.reduce((sum, s) => sum + (parseFloat(s.avg_arpv) * parseInt(s.visitor_count)), 0) / totalSubs;
 
     // Get elasticity from segment_elasticity.json (with cohort multiplier applied)
     const elasticity = window.segmentEngine.getElasticity(tier, matching[0].compositeKey, axis);
@@ -1455,11 +1498,11 @@ function renderSegmentComparisonTable() {
     // Calculate axis-aware risk level
     let risk_level;
     if (axis === 'engagement') {
-      // Engagement (churn) elasticity is POSITIVE - higher = more risky
+      // Engagement (return rate) elasticity is POSITIVE - higher = more risky
       // Realistic thresholds based on actual business impact:
-      // Low: < 0.7 (churn increases < 70% when price doubles - very sticky)
-      // Medium: 0.7 - 1.5 (70-150% churn increase - moderate risk)
-      // High: > 1.5 (> 150% churn increase - very risky)
+      // Low: < 0.7 (return rate increases < 70% when price doubles - very sticky)
+      // Medium: 0.7 - 1.5 (70-150% return rate increase - moderate risk)
+      // High: > 1.5 (> 150% return rate increase - very risky)
       risk_level = elasticity < 0.7 ? 'Low' : (elasticity < 1.5 ? 'Medium' : 'High');
     } else if (axis === 'acquisition') {
       // Acquisition elasticity is NEGATIVE - more negative = more risky
@@ -1482,9 +1525,9 @@ function renderSegmentComparisonTable() {
     return {
       segment: segmentId,
       label: window.segmentEngine.formatSegmentLabel(segmentId),
-      subscribers: totalSubs,
-      churn_rate: avgChurn,
-      arpu: avgArpu,
+      visitors: totalSubs,
+      return_rate: avgChurn,
+      arpv: avgArpu,
       elasticity: elasticity || -2.0,
       risk_level: risk_level
     };
@@ -1494,23 +1537,29 @@ function renderSegmentComparisonTable() {
   comparisonData.sort((a, b) => {
     switch(sortBy) {
       case 'elasticity': return a.elasticity - b.elasticity;
-      case 'subscribers': return b.subscribers - a.subscribers;
-      case 'churn': return b.churn_rate - a.churn_rate;
-      case 'arpu': return b.arpu - a.arpu;
+      case 'visitors': return b.visitors - a.visitors;
+      case 'return_rate': return b.return_rate - a.return_rate;
+      case 'arpv': return b.arpv - a.arpv;
       default: return 0;
     }
   });
 
   // Render table
   const container = document.getElementById('segment-comparison-table');
+
+  if (!container) {
+    console.error('segment-comparison-table container not found');
+    return;
+  }
+
   container.innerHTML = `
     <table class="table table-hover">
       <thead class="table-light">
         <tr>
           <th>Segment</th>
-          <th class="text-end">Subscribers</th>
-          <th class="text-end">Churn Rate</th>
-          <th class="text-end">ARPU</th>
+          <th class="text-end">Visitors</th>
+          <th class="text-end">Return Rate</th>
+          <th class="text-end">ARPV</th>
           <th class="text-end">Elasticity</th>
           <th class="text-center">Risk Level</th>
         </tr>
@@ -1519,9 +1568,9 @@ function renderSegmentComparisonTable() {
         ${comparisonData.map(d => `
           <tr>
             <td><strong>${d.label}</strong></td>
-            <td class="text-end">${formatNumber(d.subscribers)}</td>
-            <td class="text-end">${formatPercent(d.churn_rate, 2)}</td>
-            <td class="text-end">${formatCurrency(d.arpu)}</td>
+            <td class="text-end">${formatNumber(d.visitors)}</td>
+            <td class="text-end">${formatPercent(d.return_rate, 2)}</td>
+            <td class="text-end">${formatCurrency(d.arpv)}</td>
             <td class="text-end">
               <span class="badge ${d.risk_level === 'High' ? 'bg-danger' : (d.risk_level === 'Medium' ? 'bg-warning' : 'bg-success')}">
                 ${d.elasticity.toFixed(2)}
@@ -1547,6 +1596,11 @@ function renderSegmentComparisonTable() {
  */
 function renderSegmentComparisonChart(data) {
   const ctx = document.getElementById('segment-comparison-chart');
+
+  if (!ctx) {
+    console.error('segment-comparison-chart canvas not found');
+    return;
+  }
 
   if (window.comparisonChart) {
     window.comparisonChart.destroy();
@@ -1591,21 +1645,29 @@ function renderSegmentComparisonChart(data) {
  * Initialize segment comparison table
  */
 function initializeSegmentComparison() {
+  console.log('Initializing segment comparison...');
+
   const compareAxisSelect = document.getElementById('compare-axis-select');
   const compareTierSelect = document.getElementById('compare-tier-select');
   const compareSortSelect = document.getElementById('compare-sort-select');
 
-  if (!compareAxisSelect || !compareTierSelect || !compareSortSelect) return;
+  if (!compareAxisSelect || !compareTierSelect || !compareSortSelect) {
+    console.error('Segment comparison controls not found:', {
+      axisSelect: !!compareAxisSelect,
+      tierSelect: !!compareTierSelect,
+      sortSelect: !!compareSortSelect
+    });
+    return;
+  }
 
+  console.log('Adding event listeners to segment comparison controls');
   compareAxisSelect.addEventListener('change', renderSegmentComparisonTable);
   compareTierSelect.addEventListener('change', renderSegmentComparisonTable);
   compareSortSelect.addEventListener('change', renderSegmentComparisonTable);
 
   // Initial render
+  console.log('Rendering initial segment comparison table');
   renderSegmentComparisonTable();
-
-  // Section stays hidden until user clicks "Explore Segments" button
-  // document.getElementById('segment-analysis-section').style.display = 'block';
 }
 
 /**
@@ -1644,9 +1706,9 @@ function applyFilterPreset(preset) {
 
   switch(preset) {
     case 'high-risk':
-      // High churn rate (> 15%)
+      // High return rate (> 15%)
       targetSegments = segments
-        .filter(s => parseFloat(s.avg_churn_rate) > 0.15)
+        .filter(s => parseFloat(s.avg_return_rate) > 0.15)
         .map(s => s.engagement);
       break;
     case 'low-elastic':
@@ -1659,15 +1721,15 @@ function applyFilterPreset(preset) {
         .map(s => s.engagement);
       break;
     case 'high-value':
-      // High ARPU (> $30)
+      // High ARPV (> $30)
       targetSegments = segments
-        .filter(s => parseFloat(s.avg_arpu) > 30)
+        .filter(s => parseFloat(s.avg_arpv) > 30)
         .map(s => s.monetization);
       break;
     case 'large':
-      // Large subscriber count (> 2000)
+      // Large visitor count (> 2000)
       targetSegments = segments
-        .filter(s => parseInt(s.subscriber_count) > 2000)
+        .filter(s => parseInt(s.visitor_count) > 2000)
         .map(s => s.acquisition);
       break;
   }
@@ -1743,7 +1805,7 @@ function updateFilterSummary() {
   const filteredSegments = window.segmentEngine.filterSegments(filters);
   const tierSegments = filteredSegments.filter(s => s.tier === tier);
 
-  const totalSubs = tierSegments.reduce((sum, s) => sum + parseInt(s.subscriber_count || 0), 0);
+  const totalSubs = tierSegments.reduce((sum, s) => sum + parseInt(s.visitor_count || 0), 0);
 
   const statsElement = document.getElementById('filter-stats');
   if (tierSegments.length === window.segmentEngine.getSegmentsForTier(tier).length) {
@@ -1751,7 +1813,7 @@ function updateFilterSummary() {
   } else {
     statsElement.innerHTML = `
       ${tierSegments.length} segments,
-      ${totalSubs.toLocaleString()} subscribers
+      ${totalSubs.toLocaleString()} visitors
     `;
   }
 }
@@ -1769,9 +1831,9 @@ function exportSegmentsToCSV() {
     'Acquisition',
     'Engagement',
     'Monetization',
-    'Subscribers',
-    'Churn Rate',
-    'ARPU',
+    'Visitors',
+    'Return Rate',
+    'ARPV',
     'Elasticity'
   ];
 
@@ -1782,9 +1844,9 @@ function exportSegmentsToCSV() {
       seg.acquisition,
       seg.engagement,
       seg.monetization,
-      seg.subscriber_count,
-      seg.avg_churn_rate,
-      seg.avg_arpu,
+      seg.visitor_count,
+      seg.avg_return_rate,
+      seg.avg_arpv,
       elasticity
     ];
   });
@@ -1807,7 +1869,7 @@ function exportVisualizationToSVG(containerId, filename) {
   const svg = container.querySelector('svg');
 
   if (!svg) {
-    alert('No SVG visualization found to export');
+    showAlert('No SVG visualization found to export', 'warning');
     return;
   }
 
@@ -1902,7 +1964,7 @@ async function init() {
 // Start app
 init().catch(error => {
   console.error('Failed to initialize app:', error);
-  alert('Failed to load application. Please check console for details.');
+  showAlert('Failed to load application. Please check console for details.', 'danger');
 });
 
 /**
@@ -2015,7 +2077,7 @@ function populateElasticityModelTabs() {
         const top3Container = document.getElementById('top-scenarios-list');
         const currentTop3 = window.currentTop3ScenariosByModel?.[activeModelType] || [];
         if (!top3Container || currentTop3.length === 0) {
-          alert('Please rank scenarios first to generate a decision pack.');
+          showAlert('Please rank scenarios first to generate a decision pack.', 'warning');
           return;
         }
 
@@ -2025,7 +2087,7 @@ function populateElasticityModelTabs() {
 
       } catch (error) {
         console.error('Error exporting PDF:', error);
-        alert('Error generating PDF: ' + error.message);
+        showAlert('Error generating PDF: ' + error.message, 'danger');
       } finally {
         exportPdfBtn.disabled = false;
         exportPdfBtn.innerHTML = '<i class="bi bi-file-pdf me-2"></i>Export to PDF';
@@ -2041,7 +2103,7 @@ function populateElasticityModelTabs() {
 
         // Export all saved scenarios with top 3 highlighted
         if (!savedScenarios || savedScenarios.length === 0) {
-          alert('No saved scenarios to export. Please save at least one scenario first.');
+          showAlert('No saved scenarios to export. Please save at least one scenario first.', 'warning');
           return;
         }
 
@@ -2050,7 +2112,7 @@ function populateElasticityModelTabs() {
 
       } catch (error) {
         console.error('Error exporting XLSX:', error);
-        alert('Error generating Excel file: ' + error.message);
+        showAlert('Error generating Excel file: ' + error.message, 'danger');
       } finally {
         exportXlsxBtn.disabled = false;
         exportXlsxBtn.innerHTML = '<i class="bi bi-file-excel me-2"></i>Export to Excel';
@@ -2149,7 +2211,7 @@ function populateElasticityModelTabs() {
 
       } catch (error) {
         console.error('Error simulating scenario:', error);
-        alert('Error running simulation: ' + error.message);
+        showAlert('Error running simulation: ' + error.message, 'danger');
       } finally {
         newSimulateBtn.disabled = false;
         newSimulateBtn.innerHTML = '<i class="bi bi-play-fill me-2"></i>Simulate Selected Scenario';
@@ -2195,7 +2257,7 @@ function createScenarioCard(scenario) {
           <p class="card-text small text-muted mb-2">${scenario.description}</p>
           <div class="small text-muted">
             <i class="bi bi-lightbulb me-1"></i>
-            ${scenario.business_rationale}
+            ${scenario.rationale || scenario.business_rationale || 'No rationale provided'}
           </div>
         </div>
       </div>
@@ -2355,8 +2417,8 @@ function displayResultsInTabs(result, isRedisplay = false) {
     baseline_revenue: result.baseline.revenue,
     forecasted_revenue: result.forecasted.revenue,
     delta_revenue: result.delta.revenue,
-    baseline_subs: result.baseline.subscribers,
-    forecasted_subs: result.forecasted.activeSubscribers || result.forecasted.subscribers
+    baseline_subs: result.baseline.visitors,
+    forecasted_subs: result.forecasted.activeVisitors || result.forecasted.visitors
   });
 
   // Store in all simulation results for chatbot access
@@ -2381,9 +2443,9 @@ function displayResultsInTabs(result, isRedisplay = false) {
 
   // Display KPI cards
   const container = document.getElementById('result-cards-models');
-  const subscribers = result.forecasted.activeSubscribers || result.forecasted.subscribers;
-  const deltaSubscribers = result.delta.subscribers;
-  const deltaSubscribersPct = result.delta.subscribers_pct;
+  const visitors = result.forecasted.activeVisitors || result.forecasted.visitors;
+  const deltaVisitors = result.delta.visitors;
+  const deltaVisitorsPct = result.delta.visitors_pct;
 
   // Calculate Payback Metrics
   const acquisitionPayback = calculateAcquisitionPayback(result);
@@ -2394,22 +2456,22 @@ function displayResultsInTabs(result, isRedisplay = false) {
     model_type: result.model_type,
     forecasted_revenue: result.forecasted.revenue,
     delta_revenue: result.delta.revenue,
-    subscribers: subscribers,
+    visitors: visitors,
     container_exists: !!container,
-    delta_new_subscribers: result.delta?.new_subscribers,
-    delta_new_subscribers_pct: result.delta?.new_subscribers_pct,
-    forecasted_new_subscribers: result.forecasted?.new_subscribers
+    delta_new_visitors: result.delta?.new_visitors,
+    delta_new_visitors_pct: result.delta?.new_visitors_pct,
+    forecasted_new_visitors: result.forecasted?.new_visitors
   });
 
   container.innerHTML = `
     <div class="col-md-3">
       <div class="card">
         <div class="card-body text-center">
-          <div class="text-muted small">Subscribers</div>
-          <div class="h4 mb-1">${formatNumber(subscribers)}</div>
-          <div class="small ${deltaSubscribers >= 0 ? 'text-success' : 'text-danger'}">
-            ${deltaSubscribers >= 0 ? '+' : ''}${formatNumber(deltaSubscribers)}
-            (${formatPercent(deltaSubscribersPct, 1)})
+          <div class="text-muted small">Visitors</div>
+          <div class="h4 mb-1">${formatNumber(visitors)}</div>
+          <div class="small ${deltaVisitors >= 0 ? 'text-success' : 'text-danger'}">
+            ${deltaVisitors >= 0 ? '+' : ''}${formatNumber(deltaVisitors)}
+            (${formatPercent(deltaVisitorsPct, 1)})
           </div>
         </div>
       </div>
@@ -2550,24 +2612,24 @@ function renderRevenueChartInTabs(result) {
 }
 
 /**
- * Render subscriber chart in tabs
+ * Render visitor chart in tabs
  */
 function renderSubscriberChartInTabs(result) {
-  const ctx = document.getElementById('subscriber-chart-models');
+  const ctx = document.getElementById('visitor-chart-models');
 
-  if (window.subscriberChartModels) {
-    window.subscriberChartModels.destroy();
+  if (window.visitorChartModels) {
+    window.visitorChartModels.destroy();
   }
 
-  window.subscriberChartModels = new Chart(ctx, {
+  window.visitorChartModels = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['Baseline', 'Scenario'],
       datasets: [{
-        label: 'Subscribers',
+        label: 'Visitors',
         data: [
-          result.baseline.activeSubscribers || result.baseline.subscribers,
-          result.forecasted.activeSubscribers || result.forecasted.subscribers
+          result.baseline.activeVisitors || result.baseline.visitors,
+          result.forecasted.activeVisitors || result.forecasted.visitors
         ],
         backgroundColor: ['rgba(108, 117, 125, 0.8)', 'rgba(13, 110, 253, 0.8)']
       }]
@@ -2652,7 +2714,7 @@ async function renderAcquisitionCohortTable(result) {
 
   try {
     // Get tier from scenario
-    const tier = result.scenario_config?.tier || 'ad_supported';
+    const tier = result.scenario_config?.tier || 'standard_pass';
 
     // Get cohorts
     const cohorts = await getAcquisitionCohorts(tier);
@@ -2715,7 +2777,7 @@ async function renderChurnHeatmap(result) {
   if (!tableBody) return;
 
   try {
-    const tier = result.scenario_config?.tier || 'ad_supported';
+    const tier = result.scenario_config?.tier || 'standard_pass';
     const cohorts = await getChurnCohorts(tier);
 
     if (!cohorts || cohorts.length === 0) {
@@ -2989,7 +3051,7 @@ function renderBasicMigrationMatrix(tableHeader, tableBody, migration) {
  */
 async function rankAndDisplayScenarios() {
   if (savedScenarios.length === 0) {
-    alert('No saved scenarios to rank. Please simulate and save scenarios first.');
+    showAlert('No saved scenarios to rank. Please simulate and save scenarios first.', 'warning');
     return;
   }
 
@@ -3001,7 +3063,7 @@ async function rankAndDisplayScenarios() {
     const rankedScenarios = rankScenarios(savedScenarios, objective, {});
 
     if (rankedScenarios.length === 0) {
-      alert('No scenarios available to rank. Try saving more scenarios.');
+      showAlert('No scenarios available to rank. Try saving more scenarios.', 'warning');
       return;
     }
 
@@ -3010,7 +3072,7 @@ async function rankAndDisplayScenarios() {
 
   } catch (error) {
     console.error('Error ranking scenarios:', error);
-    alert('Error ranking scenarios. See console for details.');
+    showAlert('Error ranking scenarios. See console for details.', 'danger');
   }
 }
 
@@ -3061,9 +3123,9 @@ function displayTop3Scenarios(top3) {
                   </span>
                 </div>
                 <div class="col-6">
-                  <strong>Subscribers:</strong>
-                  <span class="${scenario.delta.subscribers >= 0 ? 'text-success' : 'text-danger'}">
-                    ${scenario.delta.subscribers >= 0 ? '+' : ''}${formatPercent(scenario.delta.subscribers_pct, 1)}
+                  <strong>Visitors:</strong>
+                  <span class="${scenario.delta.visitors >= 0 ? 'text-success' : 'text-danger'}">
+                    ${scenario.delta.visitors >= 0 ? '+' : ''}${formatPercent(scenario.delta.visitors_pct, 1)}
                   </span>
                 </div>
                 <div class="col-6">

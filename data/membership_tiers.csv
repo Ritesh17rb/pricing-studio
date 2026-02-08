@@ -1,0 +1,13 @@
+effective_date,tier,list_price,avg_paid_price,fast_pass_price,promotion_active,promotion_description
+2024-01-01,standard_pass,79,75.50,49,false,
+2024-01-01,premium_pass,139,132.00,0,false,Fast Pass included
+2024-01-01,vip_pass,249,249.00,0,false,All access included
+2024-06-01,standard_pass,79,47.40,49,true,Summer Flash Sale - 40% off
+2024-06-01,premium_pass,139,97.30,0,true,Summer Special - 30% off
+2024-06-01,vip_pass,249,249.00,0,false,All access included
+2025-01-01,standard_pass,79,75.50,49,false,
+2025-01-01,premium_pass,139,132.00,0,false,Fast Pass included
+2025-01-01,vip_pass,249,249.00,0,false,All access included
+2026-01-01,standard_pass,79,75.50,49,false,
+2026-01-01,premium_pass,139,132.00,0,false,Fast Pass included
+2026-01-01,vip_pass,249,249.00,0,false,All access included

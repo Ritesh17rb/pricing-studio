@@ -1,301 +1,371 @@
 {
-  "PROMO_2022_HOLIDAY": {
-    "promo_id": "PROMO_2022_HOLIDAY",
-    "campaign_name": "Holiday 2022 Acquisition Campaign",
-    "start_date": "2022-11-06",
-    "end_date": "2022-12-31",
-    "discount_pct": 30,
-    "discount_type": "percentage",
-    "duration_weeks": 8,
-    "duration_months": 2,
-    "eligible_tiers": [
-      "ad_supported",
-      "ad_free"
-    ],
-    "eligible_cohorts": [
-      "promo_only_users",
-      "deal_responsive_acquirers",
-      "new_subscribers"
-    ],
-    "eligible_channels": [
-      "paid_search",
-      "paid_social",
-      "display",
-      "email"
-    ],
-    "exclusions": [
-      "existing_subscribers"
-    ],
-    "roll_off_date": "2023-11-01",
-    "roll_off_type": "hard",
-    "roll_off_window_weeks": 4,
-    "promo_code": "HOLIDAY30",
-    "attribution_window_days": 7,
-    "target_adds": 15000,
-    "actual_adds": 14237,
-    "target_roi": 1.5,
-    "actual_roi": 1.68,
-    "marketing_spend_usd": 125000,
-    "incremental_revenue_usd": 210000,
-    "churn_spike_expected": true,
-    "churn_spike_lag_weeks": 8,
-    "notes": "Holiday season acquisition campaign targeting price-sensitive users. Expected 12-month roll-off churn in Nov 2023. Performance exceeded target with 95% attainment and 112% ROI vs target.",
-    "campaign_tags": [
-      "acquisition",
-      "seasonal",
-      "price-sensitive",
-      "high-churn-risk"
-    ],
-    "success_criteria": {
-      "adds_min": 12000,
-      "churn_rate_max": 0.55,
-      "payback_months_max": 8,
-      "ltv_cac_ratio_min": 2.0
-    },
-    "actual_performance": {
-      "adds_achieved": 14237,
-      "churn_rate_at_12mo": 0.51,
-      "payback_months": 6.8,
-      "ltv_cac_ratio": 2.3
-    }
-  },
-  "PROMO_2023_HOLIDAY": {
-    "promo_id": "PROMO_2023_HOLIDAY",
-    "campaign_name": "Holiday 2023 Acquisition Campaign",
-    "start_date": "2023-11-05",
-    "end_date": "2023-12-31",
-    "discount_pct": 30,
-    "discount_type": "percentage",
-    "duration_weeks": 8,
-    "duration_months": 2,
-    "eligible_tiers": [
-      "ad_supported",
-      "ad_free"
-    ],
-    "eligible_cohorts": [
-      "promo_only_users",
-      "deal_responsive_acquirers",
-      "new_subscribers",
-      "at_risk_lapsers"
-    ],
-    "eligible_channels": [
-      "paid_search",
-      "paid_social",
-      "display",
-      "email",
-      "partnerships"
-    ],
-    "exclusions": [
-      "existing_subscribers_tenure_gt_6mo"
-    ],
-    "roll_off_date": "2024-11-01",
-    "roll_off_type": "hard",
-    "roll_off_window_weeks": 4,
-    "promo_code": "HOLIDAY23",
-    "attribution_window_days": 7,
-    "target_adds": 18000,
-    "actual_adds": 17891,
-    "target_roi": 1.6,
-    "actual_roi": 1.72,
-    "marketing_spend_usd": 145000,
-    "incremental_revenue_usd": 249470,
-    "churn_spike_expected": true,
-    "churn_spike_lag_weeks": 8,
-    "notes": "Holiday 2023 campaign built on learnings from 2022. Expanded to include lapsers and partnerships. Higher base price ($5.99 vs $4.99) improved unit economics. 12-month roll-off expected Nov 2024.",
-    "campaign_tags": [
-      "acquisition",
-      "seasonal",
-      "winback",
-      "improved-economics"
-    ],
-    "success_criteria": {
-      "adds_min": 15000,
-      "churn_rate_max": 0.5,
-      "payback_months_max": 7,
-      "ltv_cac_ratio_min": 2.2
-    },
-    "actual_performance": {
-      "adds_achieved": 17891,
-      "churn_rate_at_8mo": 0.38,
-      "payback_months": 6.2,
-      "ltv_cac_ratio": 2.6
-    }
-  },
-  "PROMO_2023_Q2_RETENTION": {
-    "promo_id": "PROMO_2023_Q2_RETENTION",
-    "campaign_name": "Q2 2023 Retention - Price Increase Mitigation",
-    "start_date": "2023-05-15",
-    "end_date": "2023-07-31",
-    "discount_pct": 20,
+  "PROMO_2023_SUMMER_FAMILY": {
+    "promo_id": "PROMO_2023_SUMMER_FAMILY",
+    "campaign_name": "Summer 2023 Family Pass Package",
+    "start_date": "2023-06-01",
+    "end_date": "2023-08-15",
+    "discount_pct": 25,
     "discount_type": "percentage",
     "duration_weeks": 11,
     "duration_months": 2.5,
     "eligible_tiers": [
-      "ad_supported",
-      "ad_free"
+      "standard_pass",
+      "premium_pass"
     ],
     "eligible_cohorts": [
-      "price_triggered_downgraders",
-      "at_risk_lapsers",
-      "price_sensitive_churn_risks"
+      "family_small",
+      "family_large",
+      "first_time_visitors"
     ],
     "eligible_channels": [
-      "email",
-      "in_app",
-      "customer_service"
+      "online",
+      "mobile_app",
+      "travel_partners"
     ],
     "exclusions": [
-      "new_subscribers"
+      "season_pass_holders"
     ],
-    "roll_off_date": "2024-05-15",
-    "roll_off_type": "soft",
-    "roll_off_window_weeks": 8,
-    "promo_code": "SAVE20",
+    "roll_off_date": "2024-06-01",
+    "roll_off_type": "hard",
+    "roll_off_window_weeks": 0,
+    "promo_code": "SUMMER25",
     "attribution_window_days": 14,
-    "target_saves": 5000,
-    "actual_saves": 4823,
-    "target_roi": 3.5,
-    "actual_roi": 3.8,
-    "marketing_spend_usd": 35000,
-    "incremental_revenue_usd": 133000,
+    "target_adds": 22000,
+    "actual_adds": 23847,
+    "target_roi": 1.8,
+    "actual_roi": 2.1,
+    "marketing_spend_usd": 185000,
+    "incremental_revenue_usd": 388470,
     "churn_spike_expected": false,
     "churn_spike_lag_weeks": 0,
-    "notes": "Targeted retention campaign deployed alongside June 2023 price increase to mitigate churn among price-sensitive cohorts. Offered to at-risk users 2 weeks before price change. Soft roll-off with step-up pricing.",
+    "notes": "Peak summer campaign targeting families during school vacation. 25% discount made premium experiences accessible to budget-conscious families. Strong performance with 108% attainment and excellent repeat visit rates.",
     "campaign_tags": [
-      "retention",
-      "winback",
-      "price-mitigation",
-      "targeted"
+      "acquisition",
+      "seasonal",
+      "family-focused",
+      "peak-season"
     ],
     "success_criteria": {
-      "saves_min": 4000,
-      "incremental_ltv_min": 120000,
-      "cost_per_save_max": 8.0,
-      "churn_rate_reduction_pp": 2.0
+      "adds_min": 20000,
+      "return_rate_min": 0.65,
+      "payback_months_max": 6,
+      "ancillary_spend_per_visit_min": 45
     },
     "actual_performance": {
-      "saves_achieved": 4823,
-      "incremental_ltv": 187000,
-      "cost_per_save": 7.26,
-      "churn_rate_reduction_pp": 2.8
+      "adds_achieved": 23847,
+      "return_rate_at_12mo": 0.71,
+      "payback_months": 4.8,
+      "ancillary_spend_per_visit": 52
     }
   },
-  "PROMO_2024_Q1_WINBACK": {
-    "promo_id": "PROMO_2024_Q1_WINBACK",
-    "campaign_name": "Q1 2024 Winback - Holiday Churners",
-    "start_date": "2024-01-15",
-    "end_date": "2024-02-29",
-    "discount_pct": 25,
-    "discount_type": "percentage",
-    "duration_weeks": 6,
-    "duration_months": 1.5,
-    "eligible_tiers": [
-      "ad_supported",
-      "ad_free"
-    ],
-    "eligible_cohorts": [
-      "dormant_subscribers",
-      "at_risk_lapsers"
-    ],
-    "eligible_channels": [
-      "email",
-      "paid_social",
-      "display"
-    ],
-    "exclusions": [
-      "active_subscribers",
-      "churned_lt_30_days"
-    ],
-    "roll_off_date": "2025-01-15",
-    "roll_off_type": "soft",
-    "roll_off_window_weeks": 12,
-    "promo_code": "COMEBACK25",
-    "attribution_window_days": 30,
-    "target_adds": 3000,
-    "actual_adds": 2847,
-    "target_roi": 2.0,
-    "actual_roi": 2.3,
-    "marketing_spend_usd": 42000,
-    "incremental_revenue_usd": 96610,
-    "churn_spike_expected": false,
-    "churn_spike_lag_weeks": 0,
-    "notes": "Winback campaign targeting users who churned post-holiday 2023. Focused on dormant users with high historical engagement. Soft roll-off with 3-month step pricing to reduce secondary churn.",
-    "campaign_tags": [
-      "winback",
-      "reactivation",
-      "churned-users",
-      "seasonal-recovery"
-    ],
-    "success_criteria": {
-      "reactivations_min": 2500,
-      "second_churn_rate_max": 0.35,
-      "payback_months_max": 9,
-      "engagement_score_min": 0.6
-    },
-    "actual_performance": {
-      "reactivations_achieved": 2847,
-      "second_churn_rate_at_6mo": 0.31,
-      "payback_months": 7.9,
-      "avg_engagement_score": 0.68
-    }
-  },
-  "PROMO_2024_BUNDLE_LAUNCH": {
-    "promo_id": "PROMO_2024_BUNDLE_LAUNCH",
-    "campaign_name": "Bundle Tier Launch - Early Adopter Discount",
-    "start_date": "2024-09-01",
-    "end_date": "2024-10-31",
-    "discount_pct": 15,
+  "PROMO_2024_SPRING_EARLY": {
+    "promo_id": "PROMO_2024_SPRING_EARLY",
+    "campaign_name": "Spring Break 2024 Early Bird Special",
+    "start_date": "2024-02-15",
+    "end_date": "2024-04-15",
+    "discount_pct": 30,
     "discount_type": "percentage",
     "duration_weeks": 9,
     "duration_months": 2,
     "eligible_tiers": [
-      "bundle"
+      "standard_pass",
+      "premium_pass"
     ],
     "eligible_cohorts": [
-      "ad_free_loyalists",
-      "habitual_streamers",
-      "content_anchored_viewers"
+      "occasional",
+      "regular",
+      "couples",
+      "families"
+    ],
+    "eligible_channels": [
+      "online",
+      "email",
+      "paid_search",
+      "social_media"
+    ],
+    "exclusions": [
+      "vip_pass_holders"
+    ],
+    "roll_off_date": "2025-02-15",
+    "roll_off_type": "soft",
+    "roll_off_window_weeks": 8,
+    "promo_code": "SPRING30",
+    "attribution_window_days": 21,
+    "target_adds": 18000,
+    "actual_adds": 19234,
+    "target_roi": 1.6,
+    "actual_roi": 1.85,
+    "marketing_spend_usd": 145000,
+    "incremental_revenue_usd": 268430,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Shoulder season campaign to boost attendance before peak summer. Early bird pricing encouraged advance bookings during spring break period. Exceeded targets with strong conversion from email marketing.",
+    "campaign_tags": [
+      "acquisition",
+      "seasonal",
+      "shoulder-season",
+      "early-booking"
+    ],
+    "success_criteria": {
+      "adds_min": 15000,
+      "advance_booking_rate_min": 0.70,
+      "payback_months_max": 7,
+      "group_size_avg_min": 3.2
+    },
+    "actual_performance": {
+      "adds_achieved": 19234,
+      "advance_booking_rate": 0.78,
+      "payback_months": 5.9,
+      "group_size_avg": 3.6
+    }
+  },
+  "PROMO_2023_WINTER_MAGIC": {
+    "promo_id": "PROMO_2023_WINTER_MAGIC",
+    "campaign_name": "Winter Holiday Magic Pass",
+    "start_date": "2023-11-20",
+    "end_date": "2024-01-15",
+    "discount_pct": 40,
+    "discount_type": "percentage",
+    "duration_weeks": 8,
+    "duration_months": 2,
+    "eligible_tiers": [
+      "standard_pass"
+    ],
+    "eligible_cohorts": [
+      "price_sensitive",
+      "one_time",
+      "occasional",
+      "local_residents"
+    ],
+    "eligible_channels": [
+      "online",
+      "email",
+      "local_radio",
+      "outdoor_advertising"
+    ],
+    "exclusions": [
+      "season_pass_holders",
+      "recent_visitors"
+    ],
+    "roll_off_date": "2024-11-20",
+    "roll_off_type": "hard",
+    "roll_off_window_weeks": 0,
+    "promo_code": "WINTER40",
+    "attribution_window_days": 30,
+    "target_adds": 12000,
+    "actual_adds": 14562,
+    "target_roi": 1.2,
+    "actual_roi": 1.54,
+    "marketing_spend_usd": 95000,
+    "incremental_revenue_usd": 146340,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Off-peak winter campaign with aggressive 40% discount to drive attendance during slowest season. Targeted price-sensitive local market with holiday-themed attractions. Exceeded volume targets and drove strong in-park spending.",
+    "campaign_tags": [
+      "acquisition",
+      "seasonal",
+      "off-peak",
+      "price-sensitive",
+      "local-market"
+    ],
+    "success_criteria": {
+      "adds_min": 10000,
+      "occupancy_rate_min": 0.45,
+      "food_beverage_attachment_min": 0.80,
+      "payback_months_max": 9
+    },
+    "actual_performance": {
+      "adds_achieved": 14562,
+      "occupancy_rate": 0.52,
+      "food_beverage_attachment": 0.87,
+      "payback_months": 7.2
+    }
+  },
+  "PROMO_2024_BACK_TO_SCHOOL": {
+    "promo_id": "PROMO_2024_BACK_TO_SCHOOL",
+    "campaign_name": "Back-to-School Season Pass Sale",
+    "start_date": "2024-08-15",
+    "end_date": "2024-09-30",
+    "discount_pct": 20,
+    "discount_type": "percentage",
+    "duration_weeks": 6,
+    "duration_months": 1.5,
+    "eligible_tiers": [
+      "standard_pass",
+      "premium_pass"
+    ],
+    "eligible_cohorts": [
+      "season_pass_candidates",
+      "frequent",
+      "regular",
+      "families"
     ],
     "eligible_channels": [
       "email",
-      "in_app",
-      "partnerships"
+      "in_park",
+      "online",
+      "mobile_app"
     ],
     "exclusions": [
-      "ad_supported",
-      "new_subscribers"
+      "current_season_pass_holders"
     ],
-    "roll_off_date": "2025-09-01",
+    "roll_off_date": null,
+    "roll_off_type": "none",
+    "roll_off_window_weeks": 0,
+    "promo_code": "SEASONPASS20",
+    "attribution_window_days": 14,
+    "target_adds": 8500,
+    "actual_adds": 9123,
+    "target_roi": 3.2,
+    "actual_roi": 3.8,
+    "marketing_spend_usd": 68000,
+    "incremental_revenue_usd": 258340,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "End-of-summer campaign converting frequent visitors to season pass holders. 20% discount on annual passes encouraged commitment before fall season. Strong conversion among families with high visit frequency.",
+    "campaign_tags": [
+      "conversion",
+      "seasonal",
+      "season-pass",
+      "loyalty-building"
+    ],
+    "success_criteria": {
+      "conversions_min": 7500,
+      "visit_frequency_increase_pct": 40,
+      "payback_months_max": 5,
+      "renewal_rate_target": 0.65
+    },
+    "actual_performance": {
+      "conversions_achieved": 9123,
+      "visit_frequency_increase_pct": 48,
+      "payback_months": 4.1,
+      "renewal_rate_projected": 0.71
+    }
+  },
+  "PROMO_2024_VIP_LAUNCH": {
+    "promo_id": "PROMO_2024_VIP_LAUNCH",
+    "campaign_name": "VIP Experience Pass - Launch Promotion",
+    "start_date": "2024-05-01",
+    "end_date": "2024-06-30",
+    "discount_pct": 15,
+    "discount_type": "percentage",
+    "duration_weeks": 8,
+    "duration_months": 2,
+    "eligible_tiers": [
+      "vip_pass"
+    ],
+    "eligible_cohorts": [
+      "premium_pass_holders",
+      "high_spenders",
+      "luxury",
+      "frequent_visitors"
+    ],
+    "eligible_channels": [
+      "email",
+      "in_park",
+      "concierge",
+      "phone_sales"
+    ],
+    "exclusions": [
+      "standard_pass_only",
+      "price_sensitive"
+    ],
+    "roll_off_date": "2025-05-01",
     "roll_off_type": "soft",
     "roll_off_window_weeks": 12,
-    "promo_code": "BUNDLESAVE15",
+    "promo_code": "VIPEXPERIENCE15",
     "attribution_window_days": 14,
-    "target_adds": 8000,
+    "target_adds": 3500,
+    "actual_adds": 3847,
+    "target_roi": 2.8,
+    "actual_roi": 3.2,
+    "marketing_spend_usd": 125000,
+    "incremental_revenue_usd": 400000,
+    "churn_spike_expected": false,
+    "churn_spike_lag_weeks": 0,
+    "notes": "Launch campaign for new VIP Experience Pass tier at $249. Early adopter 15% discount brought price to $211.65. Successfully targeted Premium Pass holders for upsell with exclusive amenities. Exceeded targets with strong conversion and high satisfaction scores.",
+    "campaign_tags": [
+      "upsell",
+      "vip-launch",
+      "premium-tier",
+      "complete"
+    ],
+    "success_criteria": {
+      "upgrades_min": 3000,
+      "downgrade_rate_max": 0.03,
+      "arpv_lift_pct_min": 35,
+      "satisfaction_score_min": 4.5
+    },
+    "actual_performance": {
+      "upgrades_achieved": 3847,
+      "downgrade_rate": 0.019,
+      "arpv_lift_pct": 42,
+      "avg_satisfaction_score": 4.7
+    }
+  },
+  "PROMO_2026_WINTER_ESCAPE": {
+    "promo_id": "PROMO_2026_WINTER_ESCAPE",
+    "campaign_name": "Winter Blues Escape - Presidents' Day Special",
+    "start_date": "2026-02-01",
+    "end_date": "2026-03-15",
+    "discount_pct": 35,
+    "discount_type": "percentage",
+    "duration_weeks": 6,
+    "duration_months": 1.5,
+    "eligible_tiers": [
+      "standard_pass",
+      "premium_pass"
+    ],
+    "eligible_cohorts": [
+      "price_sensitive",
+      "families",
+      "local_residents",
+      "occasional",
+      "one_time"
+    ],
+    "eligible_channels": [
+      "online",
+      "email",
+      "social_media",
+      "local_radio",
+      "outdoor_advertising"
+    ],
+    "exclusions": [
+      "season_pass_holders",
+      "vip_pass_holders"
+    ],
+    "roll_off_date": "2027-02-01",
+    "roll_off_type": "hard",
+    "roll_off_window_weeks": 0,
+    "promo_code": "WINTER35",
+    "attribution_window_days": 21,
+    "target_adds": 15000,
     "actual_adds": null,
-    "target_roi": 2.5,
+    "target_roi": 1.6,
     "actual_roi": null,
-    "marketing_spend_usd": 95000,
+    "marketing_spend_usd": 115000,
     "incremental_revenue_usd": null,
     "churn_spike_expected": false,
     "churn_spike_lag_weeks": 0,
-    "notes": "Early adopter campaign for new $14.99 bundle tier launch. Targeting high-value ad_free users to migrate up. 15% discount brings effective price to $12.74, making it attractive vs standalone ad_free at $9.99. Campaign in progress.",
+    "notes": "Off-season winter campaign targeting Presidents' Day weekend and post-holiday lull. 35% discount on Standard and Premium Passes aims to drive attendance during traditionally slow February-March period. Special focus on local market and price-sensitive families looking for indoor entertainment during cold weather.",
     "campaign_tags": [
-      "upsell",
-      "bundle-launch",
-      "premium-migration",
+      "acquisition",
+      "seasonal",
+      "off-peak",
+      "price-sensitive",
       "in-progress"
     ],
     "success_criteria": {
-      "upgrades_min": 6500,
-      "downgrade_rate_max": 0.05,
-      "arpu_lift_pct_min": 25,
-      "engagement_score_min": 0.75
+      "adds_min": 13000,
+      "occupancy_rate_min": 0.48,
+      "food_beverage_attachment_min": 0.82,
+      "payback_months_max": 8
     },
     "actual_performance": {
-      "upgrades_achieved": null,
-      "downgrade_rate": null,
-      "arpu_lift_pct": null,
-      "avg_engagement_score": null
+      "adds_achieved": null,
+      "occupancy_rate": null,
+      "food_beverage_attachment": null,
+      "payback_months": null
     }
   }
 }

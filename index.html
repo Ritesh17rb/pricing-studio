@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Streaming Service Price Elasticity Studio</title>
+  <title>Legoland Pricing & Revenue Optimization Studio</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJtMTYgNyAyIDcgNyAyLTcgMi0yIDctMi03LTctMiA3LTJaIi8+PC9zdmc+">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -21,7 +21,7 @@
   <nav class="step-nav">
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
-        <div class="brand" onclick="handleBrandClick()" style="cursor: pointer;">Streaming Service Price Elasticity Studio</div>
+        <div class="brand" onclick="handleBrandClick()" style="cursor: pointer;">Legoland Pricing & Revenue Optimization Studio</div>
         <div class="d-flex align-items-center gap-3">
           <div class="steps-stack">
             <div class="step-indicator">
@@ -97,8 +97,8 @@
       <div class="container">
         <div class="hero">
           <div>
-            <h1>Price Elasticity Modeling</h1>
-            <p>Understand how price changes impact subscriber behavior, revenue, and growth. Make data-driven pricing decisions with confidence.</p>
+            <h1>Legoland Revenue Optimization</h1>
+            <p>Optimize admission pricing and maximize revenue through data-driven elasticity modeling. Understand how price changes impact visitor behavior, park attendance, and profitability.</p>
             <button class="btn btn-primary-custom btn-lg" onclick="goToStep(1)">
               Start Exploration <i class="bi bi-arrow-right ms-2"></i>
             </button>
@@ -162,23 +162,32 @@
     <!-- KPI Summary Cards -->
     <div id="kpi-section" style="display: none;">
       <!-- Pricing Tiers -->
-      <h5 class="mb-3">Current Pricing Tiers</h5>
+      <h5 class="mb-3">Current Admission Passes</h5>
       <div class="row g-4 mb-5">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="glass-card tier-card ad-lite">
-            <div class="tier-name">Ad-Lite</div>
-            <div class="tier-price">$5.99<span>/month</span></div>
+            <div class="tier-name">Standard Pass</div>
+            <div class="tier-price">$79<span>/visit</span></div>
             <div class="mt-2">
-              Limited ads • HD streaming
+              General admission • All attractions • Standard entry
             </div>
           </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="glass-card tier-card ad-free">
-            <div class="tier-name">Ad-Free</div>
-            <div class="tier-price">$9.99<span>/month</span></div>
+            <div class="tier-name">Premium Pass</div>
+            <div class="tier-price">$139<span>/visit</span></div>
             <div class="mt-2">
-              No ads • 4K streaming • Downloads
+              Priority entry • Fast Pass included • Reserved seating
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="glass-card tier-card">
+            <div class="tier-name">VIP Pass</div>
+            <div class="tier-price">$249<span>/visit</span></div>
+            <div class="mt-2">
+              All access • Skip all lines • Exclusive experiences
             </div>
           </div>
         </div>
@@ -188,20 +197,20 @@
       <h5 class="mb-3">Key Performance Metrics (Latest Week)</h5>
       <div class="row g-3" id="kpi-cards">
         <div class="col-md-3">
-          <div class="card kpi-card h-100">
+          <div class="card kpi-card h-100" title="Total number of park visitors on the most recent day. Change shows week-over-week % difference.">
             <div class="card-body">
-              <div class="text-muted mb-2 small text-uppercase">Total Subscribers</div>
-              <div class="fs-2 fw-bold" id="kpi-subscribers">--</div>
-              <div class="small text-success" id="kpi-subscribers-change">
+              <div class="text-muted mb-2 small text-uppercase">Daily Visitors <i class="bi bi-info-circle ms-1" style="font-size: 0.8rem;"></i></div>
+              <div class="fs-2 fw-bold" id="kpi-visitors">--</div>
+              <div class="small text-success" id="kpi-visitors-change">
                 <i class="bi bi-arrow-up"></i> --
               </div>
             </div>
           </div>
         </div>
         <div class="col-md-3">
-          <div class="card kpi-card h-100">
+          <div class="card kpi-card h-100" title="Estimated monthly revenue based on daily revenue × 30. Includes ticket sales and ancillary spending (food, merchandise, etc.). Change shows week-over-week % difference.">
             <div class="card-body">
-              <div class="text-muted mb-2 small text-uppercase">Monthly Revenue</div>
+              <div class="text-muted mb-2 small text-uppercase">Monthly Revenue <i class="bi bi-info-circle ms-1" style="font-size: 0.8rem;"></i></div>
               <div class="fs-2 fw-bold" id="kpi-revenue">--</div>
               <div class="small text-success" id="kpi-revenue-change">
                 <i class="bi bi-arrow-up"></i> --
@@ -210,20 +219,20 @@
           </div>
         </div>
         <div class="col-md-3">
-          <div class="card kpi-card h-100">
+          <div class="card kpi-card h-100" title="Average Revenue Per Visit - total daily revenue divided by number of visitors. Includes both ticket price and in-park spending. Change shows week-over-week dollar difference.">
             <div class="card-body">
-              <div class="text-muted mb-2 small text-uppercase">ARPU</div>
+              <div class="text-muted mb-2 small text-uppercase">ARPV <i class="bi bi-info-circle ms-1" style="font-size: 0.8rem;"></i></div>
               <div class="fs-2 fw-bold" id="kpi-arpu">--</div>
               <div class="small" id="kpi-arpu-change">--</div>
             </div>
           </div>
         </div>
         <div class="col-md-3">
-          <div class="card kpi-card h-100">
+          <div class="card kpi-card h-100" title="Percentage of visitors who return to the park within 12 months. Higher rates indicate strong guest satisfaction and loyalty. Change shows week-over-week difference in percentage points (pp).">
             <div class="card-body">
-              <div class="text-muted mb-2 small text-uppercase">Churn Rate</div>
-              <div class="fs-2 fw-bold" id="kpi-churn">--</div>
-              <div class="small text-danger" id="kpi-churn-change">
+              <div class="text-muted mb-2 small text-uppercase">Return Rate <i class="bi bi-info-circle ms-1" style="font-size: 0.8rem;"></i></div>
+              <div class="fs-2 fw-bold" id="kpi-return">--</div>
+              <div class="small text-danger" id="kpi-return-change">
                 <i class="bi bi-arrow-down"></i> --
               </div>
             </div>
@@ -235,7 +244,7 @@
       <div class="insight-box mt-4">
         <div class="icon">💡</div>
         <h5>The Question</h5>
-        <p class="mb-0">What happens if we increase prices by $1? Or offer a 30% discount? Price elasticity modeling helps us predict the impact on subscribers, revenue, and churn before making changes.</p>
+        <p class="mb-0">What happens if we increase prices by $10? Or offer a 30% discount? Price elasticity modeling helps us predict the impact on visitors, revenue, and retention before making changes.</p>
       </div>
 
     </div>
@@ -251,7 +260,7 @@
       <div class="section-header-main">
         <div class="section-number">Step 2</div>
         <h2 class="section-title">Data Explorer</h2>
-        <p class="section-subtitle">Explore the raw datasets that power our price elasticity models. Browse through subscriber data, segments, and more.</p>
+        <p class="section-subtitle">Explore the raw datasets that power our price elasticity models. Browse through visitor data, segments, and more.</p>
       </div>
     </div>
 
@@ -265,19 +274,19 @@
 
   </section>
 
-  <!-- Section 3: Acquisition Elasticity -->
+  <!-- Section 3: New Visit Elasticity -->
   <section class="section" id="section-3">
   <div class="container">
     <div class="section-header section-header-split">
       <div class="section-header-main">
         <div class="section-number">Step 6</div>
         <h2 class="section-title">
-          Acquisition Elasticity
+          New Visit Elasticity
           <button class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#methodology-modal-step3" title="View Methodology">
             <i class="bi bi-info-circle"></i>
           </button>
         </h2>
-        <p class="section-subtitle">Model how price changes affect new subscriber acquisition. Simulate scenarios and analyze impacts on sign-up rates.</p>
+        <p class="section-subtitle">Model how price changes affect new visitor acquisition. Simulate scenarios and analyze impacts on sign-up rates.</p>
       </div>
     </div>
 
@@ -291,19 +300,19 @@
 
   </section>
 
-  <!-- Section 4: Churn Elasticity -->
+  <!-- Section 4: Loyalty & Return Rate -->
   <section class="section" id="section-4">
   <div class="container">
     <div class="section-header section-header-split">
       <div class="section-header-main">
         <div class="section-number">Step 7</div>
         <h2 class="section-title">
-          Churn Elasticity
+          Loyalty & Return Rate
           <button class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#methodology-modal-step4" title="View Methodology">
             <i class="bi bi-info-circle"></i>
           </button>
         </h2>
-        <p class="section-subtitle">Understand how price increases drive subscriber churn. Model time-lagged effects and retention patterns.</p>
+        <p class="section-subtitle">Understand how price increases affect visitor retention. Model time-lagged effects and return patterns.</p>
       </div>
     </div>
 
@@ -317,19 +326,19 @@
 
   </section>
 
-  <!-- Section 5: Tier Migration -->
+  <!-- Section 5: Pass Type Migration -->
   <section class="section" id="section-5">
   <div class="container">
     <div class="section-header section-header-split">
       <div class="section-header-main">
         <div class="section-number">Step 8</div>
         <h2 class="section-title">
-          Tier Migration
+          Pass Type Migration
           <button class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#methodology-modal-step5" title="View Methodology">
             <i class="bi bi-info-circle"></i>
           </button>
         </h2>
-        <p class="section-subtitle">Model subscriber movement between pricing tiers. Analyze upgrade and downgrade patterns based on price gaps.</p>
+        <p class="section-subtitle">Model visitor movement between pricing tiers. Analyze upgrade and downgrade patterns based on price gaps.</p>
       </div>
     </div>
 
@@ -343,19 +352,19 @@
 
   </section>
 
-  <!-- Section 6: Customer Cohorts & Elasticity -->
+  <!-- Section 6: Visitor Cohorts & Elasticity -->
   <section class="section" id="section-6">
   <div class="container">
     <div class="section-header section-header-split">
       <div class="section-header-main">
         <div class="section-number">Step 4</div>
         <h2 class="section-title">
-          Customer Cohorts & Elasticity
+          Visitor Cohorts & Elasticity
           <button class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#methodology-modal-step6" title="View Methodology">
             <i class="bi bi-info-circle"></i>
           </button>
         </h2>
-        <p class="section-subtitle">Analyze customer cohorts and their differential responses to pricing changes. Explore behavioral cohorts and elasticity patterns.</p>
+        <p class="section-subtitle">Analyze visitor cohorts and their differential responses to pricing changes. Explore behavioral cohorts and elasticity patterns.</p>
       </div>
     </div>
 
@@ -381,7 +390,7 @@
             <i class="bi bi-info-circle"></i>
           </button>
         </h2>
-        <p class="section-subtitle">Compare price elasticity across different customer segments. Identify which segments are most and least price-sensitive.</p>
+        <p class="section-subtitle">Compare price elasticity across different visitor segments. Identify which segments are most and least price-sensitive.</p>
       </div>
     </div>
 
@@ -402,7 +411,7 @@
       <div class="section-header-main">
         <div class="section-number">Step 3</div>
         <h2 class="section-title">Event Calendar</h2>
-        <p class="section-subtitle">Track important events and their impact on business metrics. Understand how external factors influence subscriber behavior.</p>
+        <p class="section-subtitle">Track important events and their impact on business metrics. Understand how external factors influence visitor behavior.</p>
       </div>
     </div>
 
@@ -561,7 +570,7 @@
           Scenario Engine - 3 Elasticity Models
         </h2>
         <p class="small mb-0 opacity-75">
-          Simulate pricing scenarios across acquisition, churn, and tier migration models
+          Simulate pricing scenarios across new visits, loyalty, and pass migration models
         </p>
       </div>
       <div class="card-body">
@@ -569,7 +578,7 @@
         <div class="alert alert-info mb-4">
           <i class="bi bi-info-circle me-2"></i>
           <strong>3-Model Framework:</strong>
-          Each tab represents a distinct elasticity model with different customer responses and decision metrics.
+          Each tab represents a distinct elasticity model with different visitor responses and decision metrics.
         </div>
 
         <!-- Bootstrap Tabs for 3 Models -->
@@ -577,22 +586,22 @@
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="acquisition-tab" data-bs-toggle="tab" data-bs-target="#acquisition-pane" type="button" role="tab">
               <i class="bi bi-graph-up-arrow me-2"></i>
-              <strong>1. Acquisition Elasticity</strong>
-              <small class="d-block text-muted" style="font-size: 0.75rem;">Gross Adds Response</small>
+              <strong>1. New Visit Elasticity</strong>
+              <small class="d-block text-muted" style="font-size: 0.75rem;">New Visitor Response</small>
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="churn-tab" data-bs-toggle="tab" data-bs-target="#churn-pane" type="button" role="tab">
               <i class="bi bi-hourglass-split me-2"></i>
-              <strong>2. Churn Elasticity</strong>
-              <small class="d-block text-muted" style="font-size: 0.75rem;">Time-Lagged Response</small>
+              <strong>2. Loyalty & Return Rate</strong>
+              <small class="d-block text-muted" style="font-size: 0.75rem;">Visitor Retention</small>
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="migration-tab" data-bs-toggle="tab" data-bs-target="#migration-pane" type="button" role="tab">
               <i class="bi bi-arrows-angle-expand me-2"></i>
-              <strong>3. Tier Migration</strong>
-              <small class="d-block text-muted" style="font-size: 0.75rem;">Mix-Shift Response</small>
+              <strong>3. Pass Type Migration</strong>
+              <small class="d-block text-muted" style="font-size: 0.75rem;">Pass Mix-Shift</small>
             </button>
           </li>
         </ul>
@@ -600,7 +609,7 @@
         <!-- Tab Content -->
         <div class="tab-content" id="elasticityTabContent">
 
-          <!-- TAB 1: Acquisition Elasticity -->
+          <!-- TAB 1: New Visit Elasticity -->
           <div class="tab-pane fade show active" id="acquisition-pane" role="tabpanel">
 
             <div class="row g-4">
@@ -629,18 +638,19 @@
                   <div class="mb-4">
                     <label class="form-label fw-semibold">Select Tier</label>
                     <select class="form-select" id="acq-tier-select">
-                      <option value="ad_supported">Ad-Lite ($5.99)</option>
-                      <option value="ad_free">Ad-Free ($9.99)</option>
+                      <option value="standard_pass">Standard Pass ($79)</option>
+                      <option value="premium_pass">Premium Pass ($139)</option>
+                      <option value="vip_pass">VIP Pass ($249)</option>
                     </select>
                   </div>
 
                   <!-- Price Slider -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">New Price: <strong class="text-primary" id="acq-price-display">$5.99</strong></label>
-                    <input type="range" class="price-slider" id="acq-price-slider" min="3.99" max="9.99" step="0.50" value="5.99">
+                    <label class="form-label fw-semibold">New Price: <strong class="text-primary" id="acq-price-display">$79</strong></label>
+                    <input type="range" class="price-slider" id="acq-price-slider" min="49" max="129" step="5" value="79">
                     <div class="d-flex justify-content-between mt-1 small text-muted">
-                      <span>$3.99</span>
-                      <span>$9.99</span>
+                      <span>$49</span>
+                      <span>$129</span>
                     </div>
                   </div>
 
@@ -659,7 +669,7 @@
                       <strong class="metric-value text-success" id="acq-impact">0%</strong>
                     </div>
                     <div class="metric-row">
-                      <span class="metric-label">Total New Subscribers</span>
+                      <span class="metric-label">Total New Visitors</span>
                       <strong class="metric-value" id="acq-total-subs">0</strong>
                     </div>
                     <div class="metric-row">
@@ -673,7 +683,7 @@
                 <div class="insight-box">
                   <div class="icon">📊</div>
                   <h5>What is Elasticity?</h5>
-                  <p class="mb-0">An elasticity of <strong>-1.9</strong> means a 1% price increase leads to a 1.9% decrease in new acquisitions. Negative values indicate inverse relationship.</p>
+                  <p class="mb-0" id="elasticity-explanation">An elasticity of <strong>-1.9</strong> means a 1% price increase leads to a 1.9% decrease in new visitor acquisitions. Negative values indicate inverse relationship.</p>
                 </div>
               </div>
 
@@ -682,7 +692,7 @@
                 <!-- Chart -->
                 <div class="glass-card">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Projected New Subscribers by Cohort</h5>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Projected New Visitors by Cohort</h5>
                     <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="acq-show-ci" checked>
                       <label class="form-check-label small" for="acq-show-ci">Show 95% CI</label>
@@ -745,8 +755,8 @@
                 <div class="glass-card">
                   <!-- Model Description -->
                   <div class="alert alert-primary mb-3">
-                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 1: Acquisition Elasticity</h6>
-                    <p class="mb-2"><strong>What it captures:</strong> How new subscriber sign-ups respond to different prices and promotional offers</p>
+                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 1: New Visit Elasticity</h6>
+                    <p class="mb-2"><strong>What it captures:</strong> How new visitor registrations respond to different prices and promotional offers</p>
                     <p class="mb-0"><strong>Key Insight:</strong> Loyal fans join regardless of price. Budget-conscious users drop off sharply when prices increase.</p>
                   </div>
 
@@ -761,7 +771,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                       <div>
                         <i class="bi bi-arrow-right-circle me-2"></i>
-                        <strong>Deep Dive:</strong> Explore 375 customer segments and detailed cohort analysis
+                        <strong>Deep Dive:</strong> Explore 375 visitor segments and detailed cohort analysis
                       </div>
                       <button class="btn btn-primary btn-sm" onclick="navigateToSegments('acquisition')">
                         <i class="bi bi-graph-up me-1"></i>
@@ -780,7 +790,7 @@
 
           </div>
 
-          <!-- TAB 2: Churn Elasticity -->
+          <!-- TAB 2: Loyalty Elasticity -->
           <div class="tab-pane fade" id="churn-pane" role="tabpanel">
 
             <div class="row g-4">
@@ -791,18 +801,12 @@
 
                   <!-- Cohort Selection -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">Select Cohort</label>
+                    <label class="form-label fw-semibold">Select Engagement Cohort</label>
                     <select class="form-select" id="churn-cohort-select">
                       <option value="baseline">All Cohorts (Baseline)</option>
-                      <option value="ultra_loyal">Ultra Loyal - Delayed Ramp</option>
-                      <option value="value_conscious">Value Conscious - Moderate</option>
-                      <option value="deal_hunter">Deal Hunter - Sharp Spike!</option>
-                      <option value="content_driven">Content Driven - Conditional</option>
-                      <option value="tier_flexible">Tier Flexible</option>
-                      <option value="premium_seeker">Premium Seeker - Gentle Slope</option>
-                      <option value="at_risk">At Risk - Accelerating</option>
+                      <!-- Will be populated by JavaScript with actual visitor engagement cohorts -->
                     </select>
-                    <small class="text-muted">Watch curves change shape and cross as you switch cohorts!</small>
+                    <small class="text-muted">Compare how different visitor engagement segments respond to price changes</small>
                   </div>
 
                                     <!-- Price Increase Slider -->
@@ -817,26 +821,25 @@
 
                   <!-- Tier Selection (Button Group) -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">Current Tier Price</label>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-primary tier-btn active" data-price="5.99">$5.99</button>
-                      <button class="btn btn-sm btn-outline-primary tier-btn" data-price="9.99">$9.99</button>
+                    <label class="form-label fw-semibold">Select Pass Type</label>
+                    <div class="d-flex gap-2" id="churn-tier-buttons">
+                      <!-- Will be populated by JavaScript with actual pass types and prices -->
                     </div>
                   </div>
 
                   <!-- Inline Metrics -->
                   <div class="metric-display-card" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2);">
                     <div class="metric-row">
-                      <span class="metric-label">Baseline Churn</span>
-                      <strong class="metric-value">4.2%</strong>
+                      <span class="metric-label">Baseline Non-Return Rate</span>
+                      <strong class="metric-value" id="churn-baseline-rate">0%</strong>
                     </div>
                     <div class="metric-row">
                       <span class="metric-label">Price Change</span>
-                      <strong class="metric-value" id="churn-pct-change">+16.7%</strong>
+                      <strong class="metric-value" id="churn-pct-change">+0%</strong>
                     </div>
                     <div class="metric-row">
-                      <span class="metric-label">Peak Churn Impact</span>
-                      <strong class="metric-value text-danger" id="churn-peak-impact">+2.8pp</strong>
+                      <span class="metric-label">Peak Impact</span>
+                      <strong class="metric-value text-danger" id="churn-peak-impact">+0pp</strong>
                     </div>
                   </div>
                 </div>
@@ -845,8 +848,8 @@
                 <div class="insight-box">
                   <div class="icon">⏱️</div>
                   <h5>Why Time-Lagged?</h5>
-                  <p class="mb-2">Subscribers don't cancel immediately. Some wait for billing cycle, others for promo expiration. Peak churn typically occurs <strong>8-12 weeks</strong> after a price increase.</p>
-                  <p class="mb-0 small"><strong>Revenue Note:</strong> The cumulative revenue line accumulates over time. With extreme price increases or highly elastic cohorts (Deal Hunter), it can peak then decline as subscriber loss outweighs price gain.</p>
+                  <p class="mb-2">Visitors may reduce visit frequency. Some wait for annual pass renewal, others for promo expiration. Peak impact typically occurs <strong>8-12 weeks</strong> after a price increase.</p>
+                  <p class="mb-0 small"><strong>Revenue Note:</strong> The cumulative revenue line accumulates over time. With extreme price increases or highly elastic cohorts (Deal Hunter), it can peak then decline as visitor loss outweighs price gain.</p>
                 </div>
               </div>
 
@@ -869,7 +872,7 @@
                   <!-- Summary Metrics -->
                   <div class="metric-display-card mb-3" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
                     <div class="metric-row">
-                      <span class="metric-label">Retained Subscribers (Week 24)</span>
+                      <span class="metric-label">Retained Visitors (Week 24)</span>
                       <strong class="metric-value" id="churn-retained-subs">0</strong>
                     </div>
                     <div class="metric-row">
@@ -882,7 +885,7 @@
                     <canvas id="survival-curve-chart"></canvas>
                   </div>
                   <div class="small text-muted mt-2">
-                    <i class="bi bi-info-circle me-1"></i>Shows percentage of customers retained over time and cumulative revenue impact. Red shaded area between lines represents retention loss from price increase.
+                    <i class="bi bi-info-circle me-1"></i>Shows percentage of visitors retained over time and cumulative revenue impact. Red shaded area between lines represents retention loss from price increase.
                   </div>
                 </div>
 
@@ -897,7 +900,7 @@
                     </div>
                     <div class="time-bar" style="background: rgba(239,68,68,0.2);">
                       <div class="fill" id="bar-0-4" style="width: 30%; background: var(--primary-red);"></div>
-                      <span class="time-bar-label">Low initial impact - subscribers assess the change</span>
+                      <span class="time-bar-label">Low initial impact - visitors assess the change</span>
                     </div>
                   </div>
 
@@ -908,7 +911,7 @@
                     </div>
                     <div class="time-bar" style="background: rgba(245,158,11,0.2);">
                       <div class="fill" id="bar-4-8" style="width: 50%; background: var(--primary-orange);"></div>
-                      <span class="time-bar-label">Promo subscribers and casual viewers leave</span>
+                      <span class="time-bar-label">Promo visitors and casual viewers leave</span>
                     </div>
                   </div>
 
@@ -919,7 +922,7 @@
                     </div>
                     <div class="time-bar" style="background: rgba(239,68,68,0.3);">
                       <div class="fill" id="bar-8-12" style="width: 85%; background: var(--primary-red);"></div>
-                      <span class="time-bar-label">Maximum churn - billing cycles complete</span>
+                      <span class="time-bar-label">Maximum churn - annual pass renewals complete</span>
                     </div>
                   </div>
 
@@ -930,7 +933,7 @@
                     </div>
                     <div class="time-bar" style="background: rgba(16,185,129,0.2);">
                       <div class="fill" id="bar-12plus" style="width: 35%; background: var(--primary-green);"></div>
-                      <span class="time-bar-label">Remaining subscribers accept new price</span>
+                      <span class="time-bar-label">Remaining visitors accept new price</span>
                     </div>
                   </div>
                 </div>
@@ -947,9 +950,9 @@
                 <div class="glass-card">
                   <!-- Model Description -->
                   <div class="alert alert-primary mb-3">
-                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 2: Churn Elasticity (Time-Lagged)</h6>
-                    <p class="mb-2"><strong>What it captures:</strong> When customers cancel after price increases or when promotional discounts expire</p>
-                    <p class="mb-0"><strong>Key Insight:</strong> Cancellations don't happen immediately. Customers typically leave <strong>8-12 weeks after</strong> price changes or promo endings.</p>
+                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 2: Loyalty & Return Rate Elasticity (Time-Lagged)</h6>
+                    <p class="mb-2"><strong>What it captures:</strong> How visitor return rates change after price increases or when promotional discounts expire</p>
+                    <p class="mb-0"><strong>Key Insight:</strong> Return rate changes don't happen immediately. Visitors typically adjust their behavior <strong>8-12 weeks after</strong> price changes or promo endings.</p>
                   </div>
 
                   <!-- Churn Scenarios -->
@@ -963,7 +966,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                       <div>
                         <i class="bi bi-arrow-right-circle me-2"></i>
-                        <strong>Deep Dive:</strong> Explore churn-prone segments and time-lagged heatmaps
+                        <strong>Deep Dive:</strong> Explore retention-challenged segments and time-lagged heatmaps
                       </div>
                       <button class="btn btn-primary btn-sm" onclick="navigateToSegments('churn')">
                         <i class="bi bi-hourglass-split me-1"></i>
@@ -974,7 +977,7 @@
 
                   <p class="small text-muted mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    <strong>Note:</strong> Detailed cohort churn heatmaps will appear below after running a scenario simulation.
+                    <strong>Note:</strong> Detailed cohort retention heatmaps will appear below after running a scenario simulation.
                   </p>
                 </div>
               </div>
@@ -982,7 +985,7 @@
 
           </div>
 
-          <!-- TAB 3: Tier Migration -->
+          <!-- TAB 3: Pass Type Migration -->
           <div class="tab-pane fade" id="migration-pane" role="tabpanel">
 
             <div class="row g-4">
@@ -993,37 +996,31 @@
 
                   <!-- Cohort Selection -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">Select Cohort</label>
+                    <label class="form-label fw-semibold">Select Visitor Segment</label>
                     <select class="form-select" id="mig-cohort-select">
-                      <option value="baseline">All Cohorts (Baseline)</option>
-                      <option value="ultra_loyal">Ultra Loyal</option>
-                      <option value="value_conscious">Value Conscious</option>
-                      <option value="deal_hunter">Deal Hunter</option>
-                      <option value="content_driven">Content Driven</option>
-                      <option value="tier_flexible">Tier Flexible - High Asymmetry!</option>
-                      <option value="premium_seeker">Premium Seeker - Upgrade-Willing</option>
-                      <option value="at_risk">At Risk</option>
+                      <option value="baseline">All Segments (Baseline)</option>
+                      <!-- Will be populated by JavaScript with actual visitor segments -->
                     </select>
-                    <small class="text-muted">See crossover point shift with different cohorts!</small>
+                    <small class="text-muted">Compare how different visitor segments respond to price gap changes</small>
                   </div>
 
-                                    <!-- Ad-Lite Price Slider -->
+                                    <!-- Standard Pass Price Slider -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">Ad-Lite Price: <strong class="text-primary" id="mig-adlite-display">$5.99</strong></label>
-                    <input type="range" class="price-slider" id="mig-adlite-slider" min="3.99" max="7.99" step="0.50" value="5.99">
+                    <label class="form-label fw-semibold">Standard Pass Price: <strong class="text-primary" id="mig-standard-display">$79</strong></label>
+                    <input type="range" class="price-slider" id="mig-standard-slider" min="49" max="129" step="5" value="79">
                     <div class="d-flex justify-content-between mt-1 small text-muted">
-                      <span>$3.99</span>
-                      <span>$7.99</span>
+                      <span id="mig-standard-min">$49</span>
+                      <span id="mig-standard-max">$129</span>
                     </div>
                   </div>
 
-                  <!-- Ad-Free Price Slider -->
+                  <!-- Premium Pass Price Slider -->
                   <div class="mb-4">
-                    <label class="form-label fw-semibold">Ad-Free Price: <strong class="text-primary" id="mig-adfree-display">$9.99</strong></label>
-                    <input type="range" class="price-slider" id="mig-adfree-slider" min="6.99" max="12.99" step="0.50" value="9.99">
+                    <label class="form-label fw-semibold">Premium Pass Price: <strong class="text-primary" id="mig-premium-display">$139</strong></label>
+                    <input type="range" class="price-slider" id="mig-premium-slider" min="99" max="199" step="5" value="139">
                     <div class="d-flex justify-content-between mt-1 small text-muted">
-                      <span>$6.99</span>
-                      <span>$12.99</span>
+                      <span id="mig-premium-min">$99</span>
+                      <span id="mig-premium-max">$199</span>
                     </div>
                   </div>
 
@@ -1031,7 +1028,7 @@
                   <div class="metric-display-card" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2);">
                     <div class="metric-row">
                       <span class="metric-label">Price Gap</span>
-                      <strong class="metric-value" id="mig-price-gap">$3.00</strong>
+                      <strong class="metric-value" id="mig-price-gap">$60</strong>
                     </div>
                     <div class="metric-row">
                       <span class="metric-label">Gap Change</span>
@@ -1044,7 +1041,7 @@
                 <div class="insight-box">
                   <div class="icon">↔️</div>
                   <h5>Migration Dynamics</h5>
-                  <p class="mb-0">When the price gap narrows, more Ad-Lite subscribers upgrade. When it widens, more Ad-Free subscribers may downgrade or churn.</p>
+                  <p class="mb-0">When the price gap narrows, more Standard Pass visitors upgrade. When it widens, more Premium Pass visitors may downgrade or stop visiting.</p>
                 </div>
               </div>
 
@@ -1058,7 +1055,7 @@
                   </div>
                   <div id="sankey-diagram" style="width: 100%; height: 400px;"></div>
                   <div class="small text-muted mt-2">
-                    <i class="bi bi-info-circle me-1"></i>Flow width represents volume of subscribers. Blue = stay, Green = upgrade, Red = downgrade, Gray = churn.
+                    <i class="bi bi-info-circle me-1"></i>Flow width represents volume of visitors. Blue = stay, Green = upgrade, Red = downgrade, Gray = inactive.
                   </div>
                 </div>
 
@@ -1068,13 +1065,13 @@
 
                   <div class="migration-flow mb-4">
                     <div class="flow-box">
-                      <div style="font-size: 2rem; font-weight: 700;" id="mig-adlite-pct">62%</div>
-                      <div style="color: rgba(255,255,255,0.6);">Ad-Lite</div>
+                      <div style="font-size: 2rem; font-weight: 700;" id="mig-standard-pct">62%</div>
+                      <div style="color: rgba(255,255,255,0.6);">Standard Pass</div>
                     </div>
                     <div class="flow-arrow" id="mig-arrow">→</div>
                     <div class="flow-box">
-                      <div style="font-size: 2rem; font-weight: 700;" id="mig-adfree-pct">38%</div>
-                      <div style="color: rgba(255,255,255,0.6);">Ad-Free</div>
+                      <div style="font-size: 2rem; font-weight: 700;" id="mig-premium-pct">38%</div>
+                      <div style="color: rgba(255,255,255,0.6);">Premium Pass</div>
                     </div>
                   </div>
 
@@ -1084,34 +1081,34 @@
                         <tr>
                           <th>Transition</th>
                           <th>Probability</th>
-                          <th>Subscribers</th>
+                          <th>Visitors</th>
                           <th>Revenue Impact</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td>Ad-Lite → Ad-Free (Upgrade)</td>
+                          <td>Standard Pass → Premium Pass (Upgrade)</td>
                           <td><strong id="mig-upgrade-pct">8.2%</strong></td>
                           <td id="mig-upgrade-subs">~850</td>
                           <td class="text-success" id="mig-upgrade-rev">+$2,550</td>
                         </tr>
                         <tr>
-                          <td>Ad-Free → Ad-Lite (Downgrade)</td>
+                          <td>Premium Pass → Standard Pass (Downgrade)</td>
                           <td><strong id="mig-downgrade-pct">3.5%</strong></td>
                           <td id="mig-downgrade-subs">~420</td>
                           <td class="text-danger" id="mig-downgrade-rev">-$1,260</td>
                         </tr>
                         <tr>
-                          <td>Ad-Lite → Cancel</td>
-                          <td><strong id="mig-cancel-lite-pct">4.2%</strong></td>
-                          <td id="mig-cancel-lite-subs">~430</td>
-                          <td class="text-danger" id="mig-cancel-lite-rev">-$2,574</td>
+                          <td>Standard Pass → Stop Visiting</td>
+                          <td><strong id="mig-cancel-standard-pct">4.2%</strong></td>
+                          <td id="mig-cancel-standard-subs">~430</td>
+                          <td class="text-danger" id="mig-cancel-standard-rev">-$2,574</td>
                         </tr>
                         <tr>
-                          <td>Ad-Free → Cancel</td>
-                          <td><strong id="mig-cancel-free-pct">3.8%</strong></td>
-                          <td id="mig-cancel-free-subs">~460</td>
-                          <td class="text-danger" id="mig-cancel-free-rev">-$4,134</td>
+                          <td>Premium Pass → Stop Visiting</td>
+                          <td><strong id="mig-cancel-premium-pct">3.8%</strong></td>
+                          <td id="mig-cancel-premium-subs">~460</td>
+                          <td class="text-danger" id="mig-cancel-premium-rev">-$4,134</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1138,9 +1135,9 @@
                 <div class="glass-card">
                   <!-- Model Description -->
                   <div class="alert alert-primary mb-3">
-                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 3: Tier Migration & Mix-Shift</h6>
-                    <p class="mb-2"><strong>What it captures:</strong> How customers switch between subscription tiers based on price differences and promotional incentives</p>
-                    <p class="mb-0"><strong>Decision Takeaway:</strong> Find the smallest price gap that drives upgrades to premium tiers without causing excessive downgrades or cancellations.</p>
+                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Model 3: Pass Type Migration & Mix-Shift</h6>
+                    <p class="mb-2"><strong>What it captures:</strong> How visitors upgrade or downgrade between pass types based on price differences and promotional incentives</p>
+                    <p class="mb-0"><strong>Decision Takeaway:</strong> Find the smallest price gap that drives upgrades to premium tiers without causing excessive downgrades or reduced visits.</p>
                   </div>
 
                   <!-- Migration Scenarios -->
@@ -1215,7 +1212,7 @@
                     <option value="mix-targeted">Mix-Shift (Tier Optimization)</option>
                   </select>
                   <div class="small text-muted mt-1" id="objective-description">
-                    Maximizes revenue and ARPU with acceptable churn levels
+                    Maximizes revenue and ARPV with acceptable retention levels
                   </div>
                 </div>
                 <div class="col-md-3 d-flex">
@@ -1283,10 +1280,10 @@
             <div class="col-md-6">
               <div class="card">
                 <div class="card-header">
-                  <h4 class="h6 mb-0">Subscriber Impact</h4>
+                  <h4 class="h6 mb-0">Visitor Impact</h4>
                 </div>
                 <div class="card-body">
-                  <canvas id="subscriber-chart-models"></canvas>
+                  <canvas id="visitor-chart-models"></canvas>
                 </div>
               </div>
             </div>
@@ -1400,7 +1397,7 @@
                     data-bs-custom-class="ml-popover"
                     data-bs-html="true"
                     data-bs-title="<i class='bi bi-cpu me-2'></i>ML Methodology: Elasticity Analysis"
-                    data-bs-content="<strong>Demand Curve Model:</strong><br>Q = Q₀ × (P/P₀)^ε<br>Non-linear demand function based on constant elasticity<br><br><strong>Segmentation:</strong><br>• Tenure-based cohorts (0-3mo, 3-12mo, 12+mo)<br>• Age demographics<br>• Device type<br>• Channel acquisition<br><br><strong>Heatmap Algorithm:</strong><br>Hierarchical clustering of elasticity coefficients across segments using Ward's method<br><br><strong>Cross-Elasticity:</strong><br>Measures tier substitution effects using multivariate regression<br><br><strong>Feature Engineering:</strong><br>• Lagged price variables (1-week, 4-week)<br>• Lagged subscriber metrics<br>• Promotional flags<br>• Content score (releases - removals)">
+                    data-bs-content="<strong>Demand Curve Model:</strong><br>Q = Q₀ × (P/P₀)^ε<br>Non-linear demand function based on constant elasticity<br><br><strong>Segmentation:</strong><br>• Tenure-based cohorts (0-3mo, 3-12mo, 12+mo)<br>• Age demographics<br>• Device type<br>• Channel acquisition<br><br><strong>Heatmap Algorithm:</strong><br>Hierarchical clustering of elasticity coefficients across segments using Ward's method<br><br><strong>Cross-Elasticity:</strong><br>Measures tier substitution effects using multivariate regression<br><br><strong>Feature Engineering:</strong><br>• Lagged price variables (1-week, 4-week)<br>• Lagged visitor metrics<br>• Promotional flags<br>• Content score (releases - removals)">
               <i class="bi bi-info-circle text-primary"></i>
             </button>
           </h2>
@@ -1443,7 +1440,7 @@
                   data-bs-custom-class="ml-popover"
                   data-bs-html="true"
                   data-bs-title="<i class='bi bi-cpu me-2'></i>ML Methodology: Multi-Scenario Comparison"
-                  data-bs-content="<strong>Algorithm:</strong> Pareto optimization and multi-objective ranking<br><br><strong>Metrics Normalized:</strong><br>• Revenue impact (% change)<br>• Subscriber growth (% change)<br>• Churn rate (% change)<br>• ARPU (% change)<br>• Customer LTV<br><br><strong>Ranking Method:</strong><br>Weighted scoring based on business priorities<br><br><strong>Radar Chart:</strong><br>5-dimensional representation using min-max normalization<br><br><strong>Trade-off Analysis:</strong><br>Scatter plot showing revenue vs. growth with Pareto frontier<br><br><strong>Sensitivity:</strong> Monte Carlo simulation with 10,000 iterations per scenario">
+                  data-bs-content="<strong>Algorithm:</strong> Pareto optimization and multi-objective ranking<br><br><strong>Metrics Normalized:</strong><br>• Revenue impact (% change)<br>• Visitor growth (% change)<br>• Return rate (% change)<br>• ARPV (% change)<br>• Customer LTV<br><br><strong>Ranking Method:</strong><br>Weighted scoring based on business priorities<br><br><strong>Radar Chart:</strong><br>5-dimensional representation using min-max normalization<br><br><strong>Trade-off Analysis:</strong><br>Scatter plot showing revenue vs. growth with Pareto frontier<br><br><strong>Sensitivity:</strong> Monte Carlo simulation with 10,000 iterations per scenario">
             <i class="bi bi-info-circle text-primary"></i>
           </button>
         </h2>
@@ -1497,7 +1494,7 @@
   </div>
   </div>
 
-  <!-- Customer Cohorts Section -->
+  <!-- Visitor Cohorts Section -->
   <div id="segmentation-section" style="display: none;">
   <div class="container my-4">
     <div class="card">
@@ -1506,7 +1503,7 @@
           <div>
             <h2 class="h5 mb-0">
               <i class="bi bi-people me-2"></i>
-              Customer Cohorts & Elasticity
+              Visitor Cohorts & Elasticity
             </h2>
             <p class="small text-muted mb-0">
               Pricing changes don't affect everyone the same way
@@ -1520,8 +1517,8 @@
           <div class="col-md-4">
             <label class="form-label fw-bold">Tier</label>
             <select id="segment-tier-select" class="form-select">
-              <option value="ad_supported">Ad-Lite</option>
-              <option value="ad_free" selected>Ad-Free</option>
+              <option value="standard_pass">Standard Pass</option>
+              <option value="premium_pass" selected>Premium Pass</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -1547,7 +1544,7 @@
           <i class="bi bi-info-circle me-2"></i>
           <strong>Cohort Segmentation:</strong>
           Customers are segmented by price sensitivity because pricing changes don't affect everyone the same way.
-          Promo-driven joiners have high acquisition elasticity. Content-led joiners have low elasticity. Long-tenure loyalists have very low churn.
+          Promo-driven joiners have high acquisition elasticity. Event-driven visitors have low elasticity. Long-tenure loyalists have very high retention.
         </div>
 
         <!-- Filter Summary Stats -->
@@ -1559,15 +1556,15 @@
         <div class="segment-filters mb-4">
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label fw-bold small text-uppercase">Acquisition Price Sensitivity:</label>
+              <label class="form-label fw-bold small text-uppercase">Visit Frequency:</label>
               <div id="acquisition-filters" class="filter-pills d-flex flex-wrap gap-2"></div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold small text-uppercase">Engagement & Churn Propensity:</label>
+              <label class="form-label fw-bold small text-uppercase">Party Composition:</label>
               <div id="engagement-filters" class="filter-pills d-flex flex-wrap gap-2"></div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold small text-uppercase">Monetization & Plan Type:</label>
+              <label class="form-label fw-bold small text-uppercase">Price Sensitivity:</label>
               <div id="monetization-filters" class="filter-pills d-flex flex-wrap gap-2"></div>
             </div>
           </div>
@@ -1603,7 +1600,7 @@
           <div id="3axis-view" class="chart-container" style="display: none;">
             <h3 class="h6 mb-3">3-Axis Elasticity Visualization</h3>
             <p class="text-muted small">
-              Circle size represents subscriber count. Click cohorts to explore details.
+              Circle size represents visitor count. Click cohorts to explore details.
             </p>
             <div id="three-axis-radial-viz"></div>
             <div class="mt-3">
@@ -1620,7 +1617,7 @@
           <div id="scatter-view" class="chart-container" style="display: none;">
             <h3 class="h6 mb-3">Cohort Scatter Plot</h3>
             <p class="text-muted small">
-              Bubble size represents ARPU, color represents churn rate. Hover for details.
+              Bubble size represents ARPV, color represents return rate. Hover for details.
             </p>
             <div id="segment-scatter-plot"></div>
           </div>
@@ -1655,17 +1652,17 @@
           <div class="col-md-4">
             <label class="form-label fw-bold">Tier</label>
             <select id="compare-tier-select" class="form-select">
-              <option value="ad_supported">Ad-Lite</option>
-              <option value="ad_free" selected>Ad-Free</option>
+              <option value="standard_pass">Standard Pass</option>
+              <option value="premium_pass" selected>Premium Pass</option>
             </select>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-bold">Sort By</label>
             <select id="compare-sort-select" class="form-select">
               <option value="elasticity">Elasticity</option>
-              <option value="subscribers">Subscribers</option>
-              <option value="churn">Churn Rate</option>
-              <option value="arpu">ARPU</option>
+              <option value="visitors">Visitors</option>
+              <option value="return_rate">Return Rate</option>
+              <option value="arpv">ARPV</option>
             </select>
           </div>
         </div>
@@ -1697,37 +1694,12 @@
         </div>
         <div class="card-body">
 
-          <!-- Event Type Filters -->
-          <div class="row mb-4">
-            <div class="col-md-12">
-              <div class="btn-group" role="group" aria-label="Event type filters">
-                <input type="checkbox" class="btn-check" id="filter-all" checked autocomplete="off">
-                <label class="btn btn-outline-primary btn-sm" for="filter-all">
-                  <i class="bi bi-check-all me-1"></i>All Events
-                </label>
-
-                <input type="checkbox" class="btn-check" id="filter-price-change" checked autocomplete="off">
-                <label class="btn btn-outline-success btn-sm" for="filter-price-change">
-                  <i class="bi bi-currency-dollar me-1"></i>Price Changes
-                </label>
-
-                <input type="checkbox" class="btn-check" id="filter-promo" checked autocomplete="off">
-                <label class="btn btn-outline-info btn-sm" for="filter-promo">
-                  <i class="bi bi-tag me-1"></i>Promos
-                </label>
-
-                <input type="checkbox" class="btn-check" id="filter-tentpole" checked autocomplete="off">
-                <label class="btn btn-outline-warning btn-sm" for="filter-tentpole">
-                  <i class="bi bi-star me-1"></i>Tentpole Content
-                </label>
-              </div>
-            </div>
-          </div>
+          <!-- Filters removed for cleaner UI -->
 
           <!-- Timeline Visualization -->
           <div class="mb-4">
             <h6 class="fw-bold mb-3">
-              <i class="bi bi-clock-history me-2"></i>Event Timeline (2022-2024)
+              <i class="bi bi-clock-history me-2"></i>Event Timeline (2024-2026)
             </h6>
             <div id="event-timeline" class="p-3 rounded" style="min-height: 300px;">
               <!-- Timeline will be rendered here -->
@@ -1831,8 +1803,8 @@
 
         <!-- Input -->
         <div class="input-group mb-3">
-          <input type="text" id="chat-input" class="form-control" placeholder="Ask about scenarios: interpret results, compare, or suggest new scenarios..." disabled />
-          <button id="chat-send-btn" class="btn btn-primary" disabled>
+          <input type="text" id="chat-input" class="form-control" placeholder="Ask about scenarios: interpret results, compare, or suggest new scenarios..." />
+          <button id="chat-send-btn" class="btn btn-primary">
             <i class="bi bi-send"></i> Send
           </button>
         </div>
@@ -1844,10 +1816,10 @@
             Try asking:
           </small>
           <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-outline-secondary suggested-query" disabled>Interpret the current scenario results and trade-offs</button>
-            <button class="btn btn-sm btn-outline-secondary suggested-query" disabled>Suggest a scenario to maximize revenue with churn under 5%</button>
-            <button class="btn btn-sm btn-outline-secondary suggested-query" disabled>Explain the demand curve chart for the current tier</button>
-            <button class="btn btn-sm btn-outline-secondary suggested-query" disabled>Show high-churn segments in the Ad-Lite tier</button>
+            <button class="btn btn-sm btn-outline-secondary suggested-query">What pricing strategy maximizes revenue during peak summer season?</button>
+            <button class="btn btn-sm btn-outline-secondary suggested-query">How does a $10 price increase affect family visitor attendance?</button>
+            <button class="btn btn-sm btn-outline-secondary suggested-query">Compare Standard Pass at $79 vs $89 - which is better for total revenue?</button>
+            <button class="btn btn-sm btn-outline-secondary suggested-query">What discount level should we offer during off-peak winter months?</button>
           </div>
         </div>
       </div>
@@ -1972,40 +1944,40 @@
         <div class="modal-body">
           <h6 class="mb-3"><i class="bi bi-database me-2"></i> Data Sources</h6>
           <ul>
-            <li><strong>subscribers.csv</strong> - 50,000 subscriber records (synthetic data)</li>
-            <li><strong>weekly_aggregated.csv</strong> - 471 weekly KPI snapshots by tier</li>
-            <li><strong>pricing_history.csv</strong> - Historical pricing and promotions</li>
+            <li><strong>visitors.csv</strong> - 50,000 visitor records (synthetic data)</li>
+            <li><strong>daily_aggregated.csv</strong> - 2,193 daily KPI snapshots by membership tier</li>
+            <li><strong>membership_tiers.csv</strong> - Historical pricing and seasonal promotions</li>
           </ul>
 
           <h6 class="mb-3 mt-4"><i class="bi bi-graph-up me-2"></i> KPI Formulas</h6>
 
           <div class="card mb-3">
-            <div class="card-header"><strong>Average Revenue Per User (ARPU)</strong></div>
+            <div class="card-header"><strong>Average Revenue Per Visitor (ARPV)</strong></div>
             <div class="card-body">
-              <code>ARPU = Total Revenue / Active Subscribers</code>
-              <p class="small text-muted mt-2 mb-0">Calculated per tier, weighted by subscriber count</p>
+              <code>ARPV = Total Revenue / Active Visitors</code>
+              <p class="small text-muted mt-2 mb-0">Calculated per tier, weighted by visitor count</p>
             </div>
           </div>
 
           <div class="card mb-3">
-            <div class="card-header"><strong>Customer Lifetime Value (LTV)</strong></div>
+            <div class="card-header"><strong>Visitor Lifetime Value (LTV)</strong></div>
             <div class="card-body">
-              <code>LTV = ARPU × Average Tenure (months) × (1 - Churn Rate)</code>
-              <p class="small text-muted mt-2 mb-0">Discounted over 24-month horizon at 5% annual rate</p>
+              <code>LTV = ARPV × Expected Lifetime Visits × Return Rate</code>
+              <p class="small text-muted mt-2 mb-0">Based on average 8 lifetime visits for active pass holders</p>
             </div>
           </div>
 
           <div class="card mb-3">
-            <div class="card-header"><strong>Churn Rate</strong></div>
+            <div class="card-header"><strong>Return Rate</strong></div>
             <div class="card-body">
-              <code>Monthly Churn = Churned Subscribers / Active Subscribers (30-day window)</code>
+              <code>Monthly Inactive Rate = Inactive Visitors / Active Visitors (30-day window)</code>
               <p class="small text-muted mt-2 mb-0">Smoothed with 90-day moving average</p>
             </div>
           </div>
 
           <h6 class="mb-3 mt-4"><i class="bi bi-lightbulb me-2"></i> Key Assumptions</h6>
           <ul>
-            <li>All data is synthetic, representing a realistic streaming service</li>
+            <li>All data is synthetic, representing a realistic theme park</li>
             <li>Baseline period: Last 12 weeks of available data</li>
             <li>Currency: USD</li>
             <li>No seasonal adjustments applied</li>
@@ -2018,13 +1990,13 @@
     </div>
   </div>
 
-  <!-- Step 3: Acquisition Elasticity -->
+  <!-- Step 3: New Visit Elasticity -->
   <div class="modal fade" id="methodology-modal-step3" tabindex="-1" aria-labelledby="methodology-modal-step3-label" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="methodology-modal-step3-label">
-            <i class="bi bi-calculator me-2"></i> Methodology: Acquisition Elasticity
+            <i class="bi bi-calculator me-2"></i> Methodology: New Visit Elasticity
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -2053,12 +2025,12 @@
             </thead>
             <tbody>
               <tr>
-                <td>Ad-Lite</td>
+                <td>Standard Pass</td>
                 <td><strong>-2.1</strong></td>
                 <td>Most price-sensitive (value seekers)</td>
               </tr>
               <tr>
-                <td>Ad-Free</td>
+                <td>Premium Pass</td>
                 <td><strong>-1.7</strong></td>
                 <td>Moderately sensitive (quality conscious)</td>
               </tr>
@@ -2103,7 +2075,7 @@
               </ul>
 
               <p class="small text-muted mt-3 mb-0">
-                <strong>Why Poisson?</strong> Subscriber counts are whole numbers (0, 1, 2...). This statistical method naturally fits count data and auto-adjusts as volumes change.
+                <strong>Why Poisson?</strong> Visitor counts are whole numbers (0, 1, 2...). This statistical method naturally fits count data and auto-adjusts as volumes change.
               </p>
             </div>
           </div>
@@ -2120,26 +2092,26 @@
     </div>
   </div>
 
-  <!-- Step 4: Churn Elasticity -->
+  <!-- Step 4: Loyalty Elasticity -->
   <div class="modal fade" id="methodology-modal-step4" tabindex="-1" aria-labelledby="methodology-modal-step4-label" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="methodology-modal-step4-label">
-            <i class="bi bi-calculator me-2"></i> Methodology: Churn Elasticity
+            <i class="bi bi-calculator me-2"></i> Methodology: Loyalty Elasticity
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <h6 class="mb-3"><i class="bi bi-diagram-3 me-2"></i> Churn Model</h6>
-          <p>Churn elasticity models how price increases drive subscriber cancellations over time.</p>
+          <h6 class="mb-3"><i class="bi bi-diagram-3 me-2"></i> Loyalty Model</h6>
+          <p>Churn elasticity models how price increases drive visitor attrition over time.</p>
 
           <div class="card mb-3">
             <div class="card-header "><strong>Churn Formula</strong></div>
             <div class="card-body">
-              <code>Additional Churn% = Churn Elasticity × Price Change% × Time Factor</code>
+              <code>Additional Churn% = Loyalty Elasticity × Price Change% × Time Factor</code>
               <p class="small text-muted mt-2">
-                <strong>Example:</strong> 10% price increase with -1.8 elasticity → +18% churn rate (baseline 3% → 3.54%)
+                <strong>Example:</strong> 10% price increase with -1.8 elasticity → +18% return rate (baseline 3% → 3.54%)
               </p>
             </div>
           </div>
@@ -2163,7 +2135,7 @@
               <tr>
                 <td>2-3 months</td>
                 <td>1.0×</td>
-                <td>Peak churn period</td>
+                <td>Peak impact period</td>
               </tr>
               <tr>
                 <td>4-6 months</td>
@@ -2179,12 +2151,12 @@
           </table>
 
           <h6 class="mb-3 mt-4"><i class="bi bi-people me-2"></i> Cohort-Specific Churn</h6>
-          <p>Different customer segments have different churn sensitivities:</p>
+          <p>Different visitor segments have different retention sensitivities:</p>
           <ul>
-            <li><strong>New subscribers (0-6 months):</strong> 2.5× baseline churn elasticity</li>
+            <li><strong>New visitors (0-6 months):</strong> 2.5× baseline loyalty elasticity</li>
             <li><strong>Mid-tenure (6-18 months):</strong> 1.0× baseline</li>
             <li><strong>Loyal (18+ months):</strong> 0.5× baseline (more forgiving)</li>
-            <li><strong>Bundle subscribers:</strong> 0.3× baseline (highest retention)</li>
+            <li><strong>Bundle visitors:</strong> 0.3× baseline (highest retention)</li>
           </ul>
 
           <h6 class="mb-3 mt-4"><i class="bi bi-shield-check me-2"></i> Retention Tactics</h6>
@@ -2208,7 +2180,7 @@
 
               <p class="mb-2 mt-3"><strong>Pre-fitted Coefficients:</strong></p>
               <ul class="small mb-0">
-                <li><code>intercept = -2.944</code> → baseline 5% churn probability</li>
+                <li><code>intercept = -2.944</code> → baseline 5% retention probability</li>
                 <li><code>price_change_pct = 0.01</code> → base price effect</li>
                 <li><code>price_x_0_4wks = 0.006</code> → immediate effect multiplier</li>
                 <li><code>price_x_4_8wks = 0.018</code> → roll-off peak multiplier</li>
@@ -2224,7 +2196,7 @@
 
           <div class="alert alert-info mt-3">
             <i class="bi bi-info-circle me-2"></i>
-            <strong>Data Source:</strong> Churn patterns calibrated from weekly_aggregated.csv historical churn rates and industry research.
+            <strong>Data Source:</strong> Churn patterns calibrated from weekly_aggregated.csv historical return rates and industry research.
           </div>
         </div>
         <div class="modal-footer">
@@ -2234,19 +2206,19 @@
     </div>
   </div>
 
-  <!-- Step 5: Tier Migration -->
+  <!-- Step 5: Pass Type Migration -->
   <div class="modal fade" id="methodology-modal-step5" tabindex="-1" aria-labelledby="methodology-modal-step5-label" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="methodology-modal-step5-label">
-            <i class="bi bi-calculator me-2"></i> Methodology: Tier Migration
+            <i class="bi bi-calculator me-2"></i> Methodology: Pass Type Migration
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <h6 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i> Migration Model</h6>
-          <p>Models subscriber movement between pricing tiers when relative prices change.</p>
+          <p>Models visitor movement between pricing tiers when relative prices change.</p>
 
           <div class="card mb-3">
             <div class="card-header "><strong>Migration Formula</strong></div>
@@ -2261,7 +2233,7 @@
           <h6 class="mb-3 mt-4"><i class="bi bi-arrows-move me-2"></i> Migration Patterns</h6>
 
           <div class="card mb-3">
-            <div class="card-header "><strong>Downgrade Triggers (Ad-Free → Ad-Lite)</strong></div>
+            <div class="card-header "><strong>Downgrade Triggers (Premium Pass → Standard Pass)</strong></div>
             <div class="card-body">
               <ul class="mb-0">
                 <li>Base downgrade rate: <strong>2-5% monthly</strong></li>
@@ -2272,7 +2244,7 @@
           </div>
 
           <div class="card mb-3">
-            <div class="card-header "><strong>Upgrade Triggers (Ad-Lite → Ad-Free)</strong></div>
+            <div class="card-header "><strong>Upgrade Triggers (Standard Pass → Premium Pass)</strong></div>
             <div class="card-body">
               <ul class="mb-0">
                 <li>Base upgrade rate: <strong>3-7% monthly</strong></li>
@@ -2311,17 +2283,17 @@
 
               <p class="mb-2 mt-3"><strong>Supported Tier Structures:</strong></p>
               <ul class="small">
-                <li><strong>2-Tier:</strong> Ad-Lite ↔ Ad-Free</li>
-                <li><strong>3-Tier Bundle:</strong> Ad-Lite, Ad-Free, Bundle (Service + Premium)</li>
-                <li><strong>3-Tier Basic:</strong> Basic, Ad-Lite, Ad-Free</li>
+                <li><strong>2-Tier:</strong> Standard Pass ↔ Premium Pass</li>
+                <li><strong>3-Tier Bundle:</strong> Standard Pass, Premium Pass, Bundle (Service + Premium)</li>
+                <li><strong>3-Tier Basic:</strong> Basic, Standard Pass, Premium Pass</li>
               </ul>
 
               <p class="mb-2 mt-3"><strong>Sample Coefficients (3-Tier Bundle):</strong></p>
               <ul class="small mb-0">
-                <li><code>ad_free_to_bundle intercept = -0.5</code> → moderate upgrade appeal</li>
+                <li><code>premium_pass_to_bundle intercept = -0.5</code> → moderate upgrade appeal</li>
                 <li><code>value_savings_pct = 0.03</code> → 21% savings → +0.63 utility</li>
                 <li><code>has_content_need = 0.8</code> → Premium content drives 55-70% conversion</li>
-                <li><code>tenure_months = 0.012</code> → loyal customers more likely to upgrade</li>
+                <li><code>tenure_months = 0.012</code> → loyal visitors more likely to upgrade</li>
               </ul>
 
               <p class="small text-muted mt-3 mb-0">
@@ -2332,7 +2304,7 @@
 
           <div class="alert alert-info mt-3">
             <i class="bi bi-lightbulb me-2"></i>
-            <strong>Calibration:</strong> Migration rates calibrated from historical subscriber flow data in subscribers.csv (tier_previous field).
+            <strong>Calibration:</strong> Migration rates calibrated from historical visitor flow data in visitors.csv (tier_previous field).
           </div>
         </div>
         <div class="modal-footer">
@@ -2342,13 +2314,13 @@
     </div>
   </div>
 
-  <!-- Step 6: Customer Cohorts -->
+  <!-- Step 6: Visitor Cohorts -->
   <div class="modal fade" id="methodology-modal-step6" tabindex="-1" aria-labelledby="methodology-modal-step6-label" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="methodology-modal-step6-label">
-            <i class="bi bi-calculator me-2"></i> Methodology: Customer Cohorts
+            <i class="bi bi-calculator me-2"></i> Methodology: Visitor Cohorts
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -2376,7 +2348,7 @@
             <div class="card-body">
               <ul class="mb-0">
                 <li><strong>Ad-value seekers:</strong> Ad-tier users, high tolerance</li>
-                <li><strong>Ad-free loyalists:</strong> Premium tier, hate ads</li>
+                <li><strong>Premium pass holders:</strong> Premium tier, hate ads</li>
                 <li><strong>Price-triggered downgraders:</strong> Sensitive to price changes</li>
                 <li><strong>Content-anchored upgraders:</strong> Upgrade for specific shows</li>
                 <li><strong>Platform switchers:</strong> Multi-platform users, low loyalty</li>
@@ -2388,11 +2360,11 @@
             <div class="card-header "><strong>Axis 3: Acquisition Channel (5 segments)</strong></div>
             <div class="card-body">
               <ul class="mb-0">
-                <li><strong>Habitual streamers:</strong> Heavy users, low churn risk</li>
+                <li><strong>Frequent visitors:</strong> Heavy users, low retention risk</li>
                 <li><strong>Content-anchored viewers:</strong> Watch specific genres only</li>
                 <li><strong>Promo-only users:</strong> Wait for deals, cancel after</li>
-                <li><strong>Binge-then-churn cyclers:</strong> Subscribe for show releases</li>
-                <li><strong>Steady-state subscribers:</strong> Consistent usage patterns</li>
+                <li><strong>Visit-then-pause cyclers:</strong> Subscribe for show releases</li>
+                <li><strong>Steady-state visitors:</strong> Consistent usage patterns</li>
               </ul>
             </div>
           </div>
@@ -2402,7 +2374,7 @@
             <div class="card-body">
               <code>Segment Elasticity = Base Tier Elasticity × Axis1 Modifier × Axis2 Modifier × Axis3 Modifier</code>
               <p class="small text-muted mt-3 mb-0">
-                <strong>Example:</strong> Ad-Lite promo-driven price-sensitive switcher:<br>
+                <strong>Example:</strong> Standard Pass promo-driven price-sensitive switcher:<br>
                 -2.1 (base) × 1.4 (promo) × 1.3 (downgrader) × 1.2 (switcher) = <strong>-4.55</strong> (highly elastic)
               </p>
             </div>
@@ -2417,7 +2389,7 @@
 
           <div class="alert alert-success mt-3">
             <i class="bi bi-check-circle me-2"></i>
-            <strong>Validation:</strong> Segments validated against holdout data showing 85% accuracy in predicting churn behavior.
+            <strong>Validation:</strong> Segments validated against holdout data showing 85% accuracy in predicting retention behavior.
           </div>
         </div>
         <div class="modal-footer">
@@ -2439,7 +2411,7 @@
         </div>
         <div class="modal-body">
           <h6 class="mb-3" style="color: #6366f1;"><i class="bi bi-bar-chart-line me-2"></i> Comparative Analysis</h6>
-          <p>Compares price sensitivity across customer segments to identify optimal pricing strategies.</p>
+          <p>Compares price sensitivity across visitor segments to identify optimal pricing strategies.</p>
 
           <h6 class="mb-3 mt-4" style="color: #6366f1;"><i class="bi bi-diagram-2 me-2"></i> Analysis Methods</h6>
 
@@ -2483,10 +2455,10 @@
           <h6 class="mb-3 mt-4" style="color: #6366f1;"><i class="bi bi-funnel me-2"></i> Filtering & Aggregation</h6>
           <p>Analysis supports multiple filter combinations:</p>
           <ul>
-            <li><strong>By Tier:</strong> Compare within Ad-Lite or ad-free tiers</li>
+            <li><strong>By Tier:</strong> Compare within Standard Pass or ad-free tiers</li>
             <li><strong>By Tenure:</strong> New (0-6mo), mid-tenure (6-18mo), loyal (18+mo)</li>
             <li><strong>By Engagement:</strong> Heavy users (>20hr/month), light users (<5hr/month)</li>
-            <li><strong>By Risk:</strong> High churn risk (>10% monthly), stable (<3% monthly)</li>
+            <li><strong>By Risk:</strong> High retention risk (>10% monthly), stable (<3% monthly)</li>
           </ul>
 
           <h6 class="mb-3 mt-4" style="color: #6366f1;"><i class="bi bi-file-earmark-arrow-down me-2"></i> Export Capabilities</h6>
@@ -2512,14 +2484,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Footer -->
-  <footer class="container my-5 text-center text-muted">
-    <small>
-      Streaming Service Price Elasticity POC -  |
-      Confidential & Proprietary
-    </small>
-  </footer>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/@gramex/ui@0.3.1/dist/dark-theme.js"></script>
@@ -2614,7 +2578,7 @@
   <script type="module" src="./js/migration-simple.js"></script>
 
   <!-- Main Application Script -->
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=8"></script>
 </body>
 
 </html>

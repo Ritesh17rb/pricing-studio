@@ -14,7 +14,7 @@ export function renderSegmentKPICards(containerId, aggregatedKPIs) {
     const container = d3.select(`#${containerId}`);
     container.selectAll('*').remove();
 
-    if (!aggregatedKPIs || aggregatedKPIs.total_subscribers === 0) {
+    if (!aggregatedKPIs || aggregatedKPIs.total_visitors === 0) {
         container.append('p')
             .attr('class', 'text-muted text-center')
             .text('No segments match the selected filters.');
@@ -29,27 +29,27 @@ export function renderSegmentKPICards(containerId, aggregatedKPIs) {
 
     const kpiData = [
         {
-            label: 'Total Subscribers',
-            value: safeNumber(aggregatedKPIs.total_subscribers, 0).toLocaleString(),
+            label: 'Total Visitors',
+            value: safeNumber(aggregatedKPIs.total_visitors, 0).toLocaleString(),
             icon: 'bi-people-fill',
             color: '#667eea'
         },
         {
-            label: 'Avg Churn Rate',
-            value: `${(safeNumber(aggregatedKPIs.weighted_churn, 0) * 100).toFixed(2)}%`,
-            icon: 'bi-graph-down-arrow',
+            label: 'Avg Return Rate',
+            value: `${(safeNumber(aggregatedKPIs.weighted_return_rate, 0) * 100).toFixed(2)}%`,
+            icon: 'bi-arrow-repeat',
             color: '#f093fb'
         },
         {
-            label: 'Avg ARPU',
-            value: `$${safeNumber(aggregatedKPIs.weighted_arpu, 0).toFixed(2)}`,
+            label: 'Avg Revenue Per Visit',
+            value: `$${safeNumber(aggregatedKPIs.weighted_arpv, 0).toFixed(2)}`,
             icon: 'bi-currency-dollar',
             color: '#4facfe'
         },
         {
-            label: 'Avg Watch Hours',
-            value: safeNumber(aggregatedKPIs.weighted_watch_hours, 0).toFixed(1),
-            icon: 'bi-clock-fill',
+            label: 'Avg Visits Per Year',
+            value: safeNumber(aggregatedKPIs.weighted_visits_per_year, 0).toFixed(1),
+            icon: 'bi-calendar-check',
             color: '#43e97b'
         },
         {
@@ -135,10 +135,10 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
             monetization: seg.monetization,
             elasticity: elasticity,
             // Use cohort-adjusted KPIs from segment data
-            kpi: axis === 'engagement' ? seg.avg_churn_rate :
-                 axis === 'monetization' ? seg.avg_arpu :
+            kpi: axis === 'engagement' ? seg.avg_return_rate :
+                 axis === 'monetization' ? seg.avg_arpv :
                  seg.avg_cac,
-            subscribers: parseInt(seg.subscriber_count || 0)
+            visitors: parseInt(seg.visitor_count || 0)
         });
     });
 
@@ -152,18 +152,18 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
     if (axis === 'acquisition') {
         xCategories = window.segmentEngine.axisDefinitions.acquisition;
         yCategories = window.segmentEngine.axisDefinitions.engagement;
-        xLabel = 'Acquisition Price Sensitivity';
-        yLabel = 'Engagement & Churn Propensity';
+        xLabel = 'Visit Frequency';
+        yLabel = 'Party Composition';
     } else if (axis === 'engagement') {
         xCategories = window.segmentEngine.axisDefinitions.engagement;
         yCategories = window.segmentEngine.axisDefinitions.monetization;
-        xLabel = 'Engagement & Churn Propensity';
-        yLabel = 'Monetization & Plan Type';
+        xLabel = 'Party Composition';
+        yLabel = 'Price Sensitivity';
     } else {
         xCategories = window.segmentEngine.axisDefinitions.monetization;
         yCategories = window.segmentEngine.axisDefinitions.acquisition;
-        xLabel = 'Monetization & Plan Type';
-        yLabel = 'Acquisition Price Sensitivity';
+        xLabel = 'Price Sensitivity';
+        yLabel = 'Visit Frequency';
     }
 
     const width = xCategories.length * cellSize;
@@ -243,9 +243,9 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
                 .attr('stroke', '#000');
 
             const segmentSummary = window.segmentEngine.generateSegmentSummary(d.compositeKey, {
-                subscriber_count: d.subscribers,
-                avg_churn_rate: axis === 'engagement' ? d.kpi : 0.12,
-                avg_arpu: axis === 'monetization' ? d.kpi : 20
+                visitor_count: d.visitors,
+                avg_return_rate: axis === 'engagement' ? d.kpi : 0.12,
+                avg_arpv: axis === 'monetization' ? d.kpi : 20
             });
 
             // Calculate position relative to container
@@ -263,11 +263,11 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
                     <em class="text-white-50" style="font-size: 11px;">${segmentSummary}</em><br>
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
                         <strong>Elasticity:</strong> ${d.elasticity.toFixed(2)}<br>
-                        <strong>${axis === 'engagement' ? 'Churn Rate' :
-                                axis === 'monetization' ? 'ARPU' : 'CAC Sensitivity'}:</strong>
+                        <strong>${axis === 'engagement' ? 'Return Rate' :
+                                axis === 'monetization' ? 'ARPV' : 'CAC Sensitivity'}:</strong>
                         ${axis === 'engagement' ? (d.kpi * 100).toFixed(2) + '%' :
                           axis === 'monetization' ? '$' + d.kpi.toFixed(2) : d.kpi.toFixed(2)}<br>
-                        <strong>Subscribers:</strong> ${d.subscribers.toLocaleString()}
+                        <strong>Visitors:</strong> ${d.visitors.toLocaleString()}
                     </div>
                 `);
         })
@@ -431,21 +431,21 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
     // Define three axes at 120° apart
     const axes = [
         {
-            name: 'Monetization & Plan Type',
+            name: 'Price Sensitivity',
             key: 'monetization',
             color: '#2563eb', // Blue
             angle: 90, // Vertical (up)
             segments: window.segmentEngine.axisDefinitions.monetization
         },
         {
-            name: 'Engagement & Churn Propensity',
+            name: 'Party Composition',
             key: 'engagement',
             color: '#22c55e', // Green
             angle: 210, // Left diagonal (210°)
             segments: window.segmentEngine.axisDefinitions.engagement
         },
         {
-            name: 'Acquisition Price Sensitivity',
+            name: 'Visit Frequency',
             key: 'acquisition',
             color: '#ef4444', // Red
             angle: 330, // Right diagonal (330°)
@@ -538,9 +538,9 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                 acquisition: seg.acquisition,
                 engagement: seg.engagement,
                 monetization: seg.monetization,
-                subscriber_count: parseInt(seg.subscriber_count) || 0,
-                avg_churn_rate: parseFloat(seg.avg_churn_rate) || 0,
-                avg_arpu: parseFloat(seg.avg_arpu) || 0
+                visitor_count: parseInt(seg.visitor_count) || 0,
+                avg_return_rate: parseFloat(seg.avg_return_rate) || 0,
+                avg_arpv: parseFloat(seg.avg_arpv) || 0
             });
         }
     });
@@ -583,15 +583,15 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         };
     });
 
-    // Determine radius scale based on subscriber count
+    // Determine radius scale based on visitor count
     const radiusScale = d3.scaleSqrt()
-        .domain([0, d3.max(segmentPositions, d => d.subscriber_count)])
+        .domain([0, d3.max(segmentPositions, d => d.visitor_count)])
         .range([3, 20]);
 
-    // Color scale based on churn rate
-    const churnScale = d3.scaleSequential(d3.interpolateRdYlGn)
-        .domain([d3.max(segmentPositions, d => d.avg_churn_rate),
-                 d3.min(segmentPositions, d => d.avg_churn_rate)]);
+    // Color scale based on return rate
+    const returnRateScale = d3.scaleSequential(d3.interpolateRdYlGn)
+        .domain([d3.max(segmentPositions, d => d.avg_return_rate),
+                 d3.min(segmentPositions, d => d.avg_return_rate)]);
 
     // Draw segment data points
     svg.selectAll('.segment-point')
@@ -600,8 +600,8 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('class', 'segment-point')
         .attr('cx', d => d.x)
         .attr('cy', d => d.y)
-        .attr('r', d => radiusScale(d.subscriber_count))
-        .attr('fill', d => churnScale(d.avg_churn_rate))
+        .attr('r', d => radiusScale(d.visitor_count))
+        .attr('fill', d => returnRateScale(d.avg_return_rate))
         .attr('stroke', '#fff')
         .attr('stroke-width', 2)
         .attr('opacity', 0.7)
@@ -613,9 +613,9 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
 
             const segmentInfo = window.segmentEngine.formatCompositeKey(d.compositeKey);
             const segmentSummary = window.segmentEngine.generateSegmentSummary(d.compositeKey, {
-                subscriber_count: d.subscriber_count,
-                avg_churn_rate: d.avg_churn_rate,
-                avg_arpu: d.avg_arpu
+                visitor_count: d.visitor_count,
+                avg_return_rate: d.avg_return_rate,
+                avg_arpv: d.avg_arpv
             });
 
             // Calculate position relative to container
@@ -632,9 +632,9 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                     <strong>${segmentInfo}</strong><br>
                     <em class="text-white-50" style="font-size: 11px;">${segmentSummary}</em><br>
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
-                        <strong>Subscribers:</strong> ${d.subscriber_count.toLocaleString()}<br>
-                        <strong>Churn Rate:</strong> ${(d.avg_churn_rate * 100).toFixed(2)}%<br>
-                        <strong>ARPU:</strong> $${d.avg_arpu.toFixed(2)}
+                        <strong>Visitors:</strong> ${d.visitor_count.toLocaleString()}<br>
+                        <strong>Return Rate:</strong> ${(d.avg_return_rate * 100).toFixed(2)}%<br>
+                        <strong>ARPV:</strong> $${d.avg_arpv.toFixed(2)}
                     </div>
                 `);
         })
@@ -680,7 +680,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('y', 25)
         .attr('font-size', '10px')
         .attr('fill', '#666')
-        .text('Circle Size: Subscribers');
+        .text('Circle Size: Visitors');
 
     [1000, 5000, 10000].forEach((count, i) => {
         const r = radiusScale(count);
@@ -705,7 +705,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('y', 130)
         .attr('font-size', '10px')
         .attr('fill', '#666')
-        .text('Color: Churn Rate');
+        .text('Color: Return Rate');
 
     legend.append('text')
         .attr('x', 10)
@@ -733,9 +733,9 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
 }
 
 /**
- * Render scatter plot of segments (Elasticity vs Subscriber Count)
+ * Render scatter plot of segments (Elasticity vs Visitor Count)
  * @param {string} containerId - DOM element ID
- * @param {string} tier - Subscription tier
+ * @param {string} tier - Membership tier
  */
 export function renderSegmentScatterPlot(containerId, tier) {
     const container = d3.select(`#${containerId}`);
@@ -753,9 +753,9 @@ export function renderSegmentScatterPlot(containerId, tier) {
     // Prepare data
     const data = segments.map(seg => ({
         compositeKey: seg.compositeKey,
-        subscribers: parseInt(seg.subscriber_count),
-        churn_rate: parseFloat(seg.avg_churn_rate),
-        arpu: parseFloat(seg.avg_arpu),
+        visitors: parseInt(seg.visitor_count),
+        churn_rate: parseFloat(seg.avg_return_rate),
+        arpu: parseFloat(seg.avg_arpv),
         elasticity: window.segmentEngine.getElasticity(tier, seg.compositeKey, 'engagement') || -2.0
     }));
 
@@ -772,7 +772,7 @@ export function renderSegmentScatterPlot(containerId, tier) {
 
     // Scales
     const xScale = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.subscribers)])
+        .domain([0, d3.max(data, d => d.visitors)])
         .range([0, width])
         .nice();
 
@@ -802,7 +802,7 @@ export function renderSegmentScatterPlot(containerId, tier) {
         .attr('y', height + 50)
         .attr('text-anchor', 'middle')
         .attr('font-weight', 'bold')
-        .text('Subscriber Count');
+        .text('Visitor Count');
 
     svg.append('text')
         .attr('transform', 'rotate(-90)')
@@ -835,7 +835,7 @@ export function renderSegmentScatterPlot(containerId, tier) {
         .data(data)
         .join('circle')
         .attr('class', 'segment-point')
-        .attr('cx', d => xScale(d.subscribers))
+        .attr('cx', d => xScale(d.visitors))
         .attr('cy', d => yScale(d.elasticity))
         .attr('r', d => radiusScale(d.arpu))
         .attr('fill', d => colorScale(d.churn_rate))
@@ -856,10 +856,10 @@ export function renderSegmentScatterPlot(containerId, tier) {
                 .style('top', y - 20 + 'px')
                 .html(`
                     <strong>${window.segmentEngine.formatCompositeKey(d.compositeKey)}</strong><br>
-                    Subscribers: ${d.subscribers.toLocaleString()}<br>
+                    Visitors: ${d.visitors.toLocaleString()}<br>
                     Elasticity: ${d.elasticity.toFixed(2)}<br>
-                    Churn: ${(d.churn_rate * 100).toFixed(2)}%<br>
-                    ARPU: $${d.arpu.toFixed(2)}
+                    Return Rate: ${(d.churn_rate * 100).toFixed(2)}%<br>
+                    ARPV: $${d.arpu.toFixed(2)}
                 `);
         })
         .on('mousemove', function(event) {
@@ -892,14 +892,14 @@ export function renderSegmentScatterPlot(containerId, tier) {
         .attr('x', 0)
         .attr('y', 25)
         .attr('font-size', '10px')
-        .text('Size: ARPU');
+        .text('Size: ARPV');
 
     // Color legend
     legend.append('text')
         .attr('x', 0)
         .attr('y', 80)
         .attr('font-size', '10px')
-        .text('Color: Churn');
+        .text('Color: Return Rate');
 
     legend.append('circle')
         .attr('cx', 10)
