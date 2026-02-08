@@ -8,7 +8,7 @@
  * Rank scenarios by selected objective
  * @param {Array} scenarios - Array of simulated scenario results
  * @param {string} objective - Objective lens (growth-max, revenue-max, churn-capped, mix-targeted)
- * @param {Object} constraints - Optional constraints (churn_cap, revenue_floor, adfree_share_target)
+ * @param {Object} constraints - Optional constraints (churn_cap, revenue_floor, premium_share_target)
  * @returns {Array} - Top 3 ranked scenarios with scores and rationale
  */
 export function rankScenarios(scenarios, objective = 'revenue-max', constraints = {}) {
@@ -78,12 +78,12 @@ function calculateObjectiveScore(scenario, objective, constraints) {
       return -churnDelta * 100 + revMaintain;
 
     case 'mix-targeted':
-      // Optimize tier mix (Ad-Free share growth)
-      const adFreeMix = forecasted.ad_free_share || 0;
-      const mixTarget = constraints.adfree_share_target || 0.5;
-      const mixDelta = Math.abs(adFreeMix - mixTarget);
-      const arpuBonus = (delta.arpu_pct || 0) * 0.5;
-      return (100 - mixDelta * 100) + arpuBonus;
+      // Optimize tier mix (Premium/VIP pass share growth)
+      const premiumMix = forecasted.premium_share || 0;
+      const mixTarget = constraints.premium_share_target || 0.5;
+      const mixDelta = Math.abs(premiumMix - mixTarget);
+      const arpvBonus = (delta.arpv_pct || delta.arpu_pct || 0) * 0.5;
+      return (100 - mixDelta * 100) + arpvBonus;
 
     default:
       return delta.revenue_pct || 0;
@@ -133,7 +133,7 @@ function validateConstraints(scenario, constraints) {
   }
 
   // Check visitor floor
-  if (constraints.visitor_floor && forecasted.activeSubscribers < constraints.visitor_floor) {
+  if (constraints.visitor_floor && forecasted.activeVisitors < constraints.visitor_floor) {
     return false;
   }
 
@@ -178,12 +178,12 @@ function generateRationale(scenario, objective, isTop) {
         rationale.push(`✓ Maximizes revenue (+${revChange.toFixed(1)}%)`);
       }
       if (arpuChange > 0) {
-        rationale.push(`✓ Boosts ARPU by ${arpuChange.toFixed(1)}%`);
+        rationale.push(`✓ Boosts ARPV by ${arpuChange.toFixed(1)}%`);
       }
       if (churnChange <= 0.03) {
-        rationale.push(`✓ Churn remains within acceptable range`);
+        rationale.push(`✓ Non-return rate remains within acceptable range`);
       } else {
-        rationale.push(`⚠ Higher churn risk (+${(churnChange * 100).toFixed(2)}pp)`);
+        rationale.push(`⚠ Higher non-return risk (+${(churnChange * 100).toFixed(2)}pp)`);
       }
       break;
 
@@ -199,10 +199,10 @@ function generateRationale(scenario, objective, isTop) {
       break;
 
     case 'mix-targeted':
-      const adFreeShare = scenario.forecasted?.ad_free_share || 0;
-      rationale.push(`✓ Ad-Free share: ${(adFreeShare * 100).toFixed(1)}%`);
+      const premiumShare = scenario.forecasted?.premium_share || 0;
+      rationale.push(`✓ Premium/VIP share: ${(premiumShare * 100).toFixed(1)}%`);
       if (arpuChange > 0) {
-        rationale.push(`✓ Higher ARPU (+${arpuChange.toFixed(1)}%)`);
+        rationale.push(`✓ Higher ARPV (+${arpuChange.toFixed(1)}%)`);
       }
       break;
   }
@@ -247,9 +247,9 @@ export function getObjectiveDisplayName(objective) {
 export function getObjectiveDescription(objective) {
   const descriptions = {
     'growth-max': 'Prioritizes visitor growth while maintaining revenue health',
-    'revenue-max': 'Maximizes revenue and ARPU with acceptable churn levels',
-    'churn-capped': 'Protects retention by capping churn at acceptable threshold',
-    'mix-targeted': 'Optimizes tier mix to increase Ad-Free share and ARPU'
+    'revenue-max': 'Maximizes revenue and ARPV with acceptable non-return levels',
+    'churn-capped': 'Protects retention by capping non-return rate at acceptable threshold',
+    'mix-targeted': 'Optimizes pass mix to increase Premium/VIP share and ARPV'
   };
   return descriptions[objective] || '';
 }

@@ -415,9 +415,29 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
     // Set container to relative positioning for tooltip
     container.style('position', 'relative');
 
+    // Add beginner-friendly explanation panel at the top
+    const explanationPanel = container.append('div')
+        .attr('class', 'alert alert-info border-info mb-3')
+        .style('font-size', '13px')
+        .html(`
+            <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle-fill me-2 mt-1" style="font-size: 18px;"></i>
+                <div>
+                    <strong>How to Read This Chart:</strong> Each bubble represents a visitor segment.
+                    <ul class="mb-0 mt-2 small">
+                        <li><strong>Position:</strong> Shows visitor characteristics on 3 dimensions (closer to an axis = stronger trait)</li>
+                        <li><strong>Size:</strong> Larger bubbles = more visitors in that segment</li>
+                        <li><strong>Color:</strong> <span style="color: #22c55e;">●</span> Green = High return rate (good retention) |
+                            <span style="color: #ef4444;">●</span> Red = Low return rate (retention risk)</li>
+                        <li><strong>Hover:</strong> See detailed visitor counts, return rates, and spending patterns</li>
+                    </ul>
+                </div>
+            </div>
+        `);
+
     // Dimensions
     const width = 1000;
-    const height = 800;
+    const height = 850;
     const centerX = width / 2;
     const centerY = height / 2;
     const axisLength = 280;
@@ -428,28 +448,43 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('height', height)
         .style('background', '#fafafa');
 
-    // Define three axes at 120° apart
+    // Define three axes at 120° apart with beginner-friendly descriptions
     const axes = [
         {
             name: 'Price Sensitivity',
+            subtitle: '(How much visitors are willing to spend)',
             key: 'monetization',
             color: '#2563eb', // Blue
             angle: 90, // Vertical (up)
-            segments: window.segmentEngine.axisDefinitions.monetization
+            segments: window.segmentEngine.axisDefinitions.monetization,
+            examples: {
+                budget: 'Most price-conscious',
+                luxury: 'Willing to pay premium'
+            }
         },
         {
             name: 'Party Composition',
+            subtitle: '(Who visits together)',
             key: 'engagement',
             color: '#22c55e', // Green
             angle: 210, // Left diagonal (210°)
-            segments: window.segmentEngine.axisDefinitions.engagement
+            segments: window.segmentEngine.axisDefinitions.engagement,
+            examples: {
+                solo: 'Individual visitors',
+                family_large: 'Large family groups'
+            }
         },
         {
             name: 'Visit Frequency',
+            subtitle: '(How often they come)',
             key: 'acquisition',
             color: '#ef4444', // Red
             angle: 330, // Right diagonal (330°)
-            segments: window.segmentEngine.axisDefinitions.acquisition
+            segments: window.segmentEngine.axisDefinitions.acquisition,
+            examples: {
+                one_time: 'Rarely visit',
+                season_pass: 'Very frequent visitors'
+            }
         }
     ];
 
@@ -460,7 +495,43 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .style('pointer-events', 'none')
         .style('font-size', '12px')
         .style('z-index', '1000')
-        .style('max-width', '300px');
+        .style('max-width', '320px');
+
+    // Draw concentric circles for depth perception
+    [0.33, 0.66, 1.0].forEach((ratio, i) => {
+        svg.append('circle')
+            .attr('cx', centerX)
+            .attr('cy', centerY)
+            .attr('r', axisLength * ratio)
+            .attr('fill', 'none')
+            .attr('stroke', '#e5e7eb')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '4,4')
+            .attr('opacity', 0.4);
+    });
+
+    // Add center point
+    svg.append('circle')
+        .attr('cx', centerX)
+        .attr('cy', centerY)
+        .attr('r', 6)
+        .attr('fill', '#94a3b8')
+        .attr('opacity', 0.6);
+
+    // Define arrow marker for axes
+    svg.append('defs').selectAll('marker')
+        .data(axes)
+        .join('marker')
+        .attr('id', d => `arrow-${d.key}`)
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 8)
+        .attr('refY', 5)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+        .attr('fill', d => d.color);
 
     // Draw axes
     axes.forEach(axis => {
@@ -468,7 +539,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         const endX = centerX + Math.cos(radians) * axisLength;
         const endY = centerY - Math.sin(radians) * axisLength;
 
-        // Axis line
+        // Axis line with arrow
         svg.append('line')
             .attr('x1', centerX)
             .attr('y1', centerY)
@@ -476,9 +547,10 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
             .attr('y2', endY)
             .attr('stroke', axis.color)
             .attr('stroke-width', 3)
-            .attr('opacity', 0.6);
+            .attr('opacity', 0.7)
+            .attr('marker-end', `url(#arrow-${axis.key})`);
 
-        // Axis label (at the end)
+        // Axis label (at the end) - Main title
         const labelDistance = 30;
         const labelX = centerX + Math.cos(radians) * (axisLength + labelDistance);
         const labelY = centerY - Math.sin(radians) * (axisLength + labelDistance);
@@ -489,8 +561,18 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
             .attr('text-anchor', 'middle')
             .attr('fill', axis.color)
             .attr('font-weight', 'bold')
-            .attr('font-size', '13px')
+            .attr('font-size', '14px')
             .text(axis.name);
+
+        // Axis subtitle (below main label)
+        svg.append('text')
+            .attr('x', labelX)
+            .attr('y', labelY + 15)
+            .attr('text-anchor', 'middle')
+            .attr('fill', axis.color)
+            .attr('font-size', '10px')
+            .attr('opacity', 0.8)
+            .text(axis.subtitle);
 
         // Plot segment markers along the axis
         axis.segments.forEach((segmentId, index) => {
@@ -607,9 +689,16 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('opacity', 0.7)
         .style('cursor', 'pointer')
         .on('mouseenter', function(event, d) {
+            // Highlight current segment
             d3.select(this)
                 .attr('opacity', 1)
-                .attr('stroke-width', 3);
+                .attr('stroke-width', 4)
+                .attr('stroke', '#fbbf24'); // Gold highlight
+
+            // Dim all other segments
+            svg.selectAll('.segment-point')
+                .filter(function(otherD) { return otherD !== d; })
+                .attr('opacity', 0.2);
 
             const segmentInfo = window.segmentEngine.formatCompositeKey(d.compositeKey);
             const segmentSummary = window.segmentEngine.generateSegmentSummary(d.compositeKey, {
@@ -624,17 +713,42 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
             const x = event.clientX - containerRect.left;
             const y = event.clientY - containerRect.top;
 
+            // Get human-readable labels for each axis
+            const acqInfo = window.segmentEngine.getSegmentInfo(d.acquisition);
+            const engInfo = window.segmentEngine.getSegmentInfo(d.engagement);
+            const monInfo = window.segmentEngine.getSegmentInfo(d.monetization);
+
+            // Calculate percentage of total visitors
+            const totalVisitors = segmentPositions.reduce((sum, s) => sum + s.visitor_count, 0);
+            const visitorPct = ((d.visitor_count / totalVisitors) * 100).toFixed(1);
+
+            // Return rate quality indicator
+            const returnQuality = d.avg_return_rate > 0.75 ? '🟢 Excellent' :
+                                  d.avg_return_rate > 0.60 ? '🟡 Good' :
+                                  d.avg_return_rate > 0.40 ? '🟠 Fair' : '🔴 At Risk';
+
             tooltip
                 .style('display', 'block')
                 .style('left', (x + 15) + 'px')
                 .style('top', (y - 30) + 'px')
                 .html(`
-                    <strong>${segmentInfo}</strong><br>
-                    <em class="text-white-50" style="font-size: 11px;">${segmentSummary}</em><br>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
-                        <strong>Visitors:</strong> ${d.visitor_count.toLocaleString()}<br>
-                        <strong>Return Rate:</strong> ${(d.avg_return_rate * 100).toFixed(2)}%<br>
-                        <strong>ARPV:</strong> $${d.avg_arpv.toFixed(2)}
+                    <div style="font-size: 13px;">
+                        <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #fbbf24;">
+                            ${segmentInfo}
+                        </div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">
+                            ${segmentSummary}
+                        </div>
+                        <div style="padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.2);">
+                            <div style="margin-bottom: 4px;"><strong>👥 Visitors:</strong> ${d.visitor_count.toLocaleString()} <span style="color: rgba(255,255,255,0.6);">(${visitorPct}% of tier)</span></div>
+                            <div style="margin-bottom: 4px;"><strong>🔁 Return Rate:</strong> ${(d.avg_return_rate * 100).toFixed(1)}% ${returnQuality}</div>
+                            <div><strong>💰 Avg Spend:</strong> $${d.avg_arpv.toFixed(2)} per visit</div>
+                        </div>
+                        <div style="padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; color: rgba(255,255,255,0.6);">
+                            <div style="margin-bottom: 2px;"><span style="color: #ef4444;">●</span> ${acqInfo ? acqInfo.label : d.acquisition}</div>
+                            <div style="margin-bottom: 2px;"><span style="color: #22c55e;">●</span> ${engInfo ? engInfo.label : d.engagement}</div>
+                            <div><span style="color: #2563eb;">●</span> ${monInfo ? monInfo.label : d.monetization}</div>
+                        </div>
                     </div>
                 `);
         })
@@ -650,9 +764,11 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                 .style('top', (y - 30) + 'px');
         })
         .on('mouseleave', function() {
-            d3.select(this)
+            // Restore all segments to original state
+            svg.selectAll('.segment-point')
                 .attr('opacity', 0.7)
-                .attr('stroke-width', 2);
+                .attr('stroke-width', 2)
+                .attr('stroke', '#fff');
 
             tooltip.style('display', 'none');
         })
@@ -660,66 +776,160 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
             // Future: Show detailed segment analysis
         });
 
-    // Add legend
-    const legendX = width - 180;
-    const legendY = 50;
+    // Add clean, professional legend
+    const legendX = width - 190;
+    const legendY = 60;
+
+    // Legend background with shadow
+    svg.append('rect')
+        .attr('x', legendX - 15)
+        .attr('y', legendY - 15)
+        .attr('width', 180)
+        .attr('height', 280)
+        .attr('fill', '#ffffff')
+        .attr('stroke', '#cbd5e1')
+        .attr('stroke-width', 1.5)
+        .attr('rx', 10)
+        .attr('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))');
 
     const legend = svg.append('g')
         .attr('transform', `translate(${legendX}, ${legendY})`);
 
+    // Legend title
     legend.append('text')
         .attr('x', 0)
         .attr('y', 0)
         .attr('font-weight', 'bold')
-        .attr('font-size', '12px')
+        .attr('font-size', '14px')
+        .attr('fill', '#1e293b')
         .text('Legend');
 
-    // Size legend
+    // Horizontal separator line
+    legend.append('line')
+        .attr('x1', 0)
+        .attr('y1', 10)
+        .attr('x2', 150)
+        .attr('y2', 10)
+        .attr('stroke', '#e2e8f0')
+        .attr('stroke-width', 1);
+
+    // SECTION 1: Bubble Size
     legend.append('text')
         .attr('x', 0)
-        .attr('y', 25)
-        .attr('font-size', '10px')
-        .attr('fill', '#666')
-        .text('Circle Size: Visitors');
+        .attr('y', 30)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#475569')
+        .text('Bubble Size');
 
-    [1000, 5000, 10000].forEach((count, i) => {
-        const r = radiusScale(count);
+    legend.append('text')
+        .attr('x', 0)
+        .attr('y', 42)
+        .attr('font-size', '9px')
+        .attr('fill', '#94a3b8')
+        .text('Number of visitors in segment');
+
+    const maxVisitors = d3.max(segmentPositions, d => d.visitor_count) || 10000;
+    const sizeExamples = [
+        { count: Math.floor(maxVisitors * 0.15), label: 'Small' },
+        { count: Math.floor(maxVisitors * 0.45), label: 'Medium' },
+        { count: Math.floor(maxVisitors * 0.85), label: 'Large' }
+    ];
+
+    sizeExamples.forEach((example, i) => {
+        const r = radiusScale(example.count);
+        const yPos = 62 + i * 28;
+
         legend.append('circle')
-            .attr('cx', 10)
-            .attr('cy', 40 + i * 25)
+            .attr('cx', 20)
+            .attr('cy', yPos)
             .attr('r', r)
-            .attr('fill', '#ccc')
-            .attr('opacity', 0.5);
+            .attr('fill', '#8b5cf6')
+            .attr('opacity', 0.7)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2);
 
         legend.append('text')
-            .attr('x', 25)
-            .attr('y', 43 + i * 25)
+            .attr('x', 40)
+            .attr('y', yPos - 4)
+            .attr('font-size', '10px')
+            .attr('font-weight', '500')
+            .attr('fill', '#334155')
+            .text(example.label);
+
+        legend.append('text')
+            .attr('x', 40)
+            .attr('y', yPos + 7)
             .attr('font-size', '9px')
-            .attr('fill', '#666')
-            .text(count.toLocaleString());
+            .attr('fill', '#94a3b8')
+            .text(example.count.toLocaleString());
     });
 
-    // Color legend
+    // SECTION 2: Color Coding
+    const colorSectionY = 170;
+
     legend.append('text')
         .attr('x', 0)
-        .attr('y', 130)
-        .attr('font-size', '10px')
-        .attr('fill', '#666')
-        .text('Color: Return Rate');
+        .attr('y', colorSectionY)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#475569')
+        .text('Bubble Color');
 
     legend.append('text')
-        .attr('x', 10)
-        .attr('y', 145)
+        .attr('x', 0)
+        .attr('y', colorSectionY + 12)
         .attr('font-size', '9px')
+        .attr('fill', '#94a3b8')
+        .text('Visitor return rate (retention)');
+
+    // High return rate (green) - stacked vertically
+    legend.append('circle')
+        .attr('cx', 20)
+        .attr('cy', colorSectionY + 32)
+        .attr('r', 9)
         .attr('fill', '#22c55e')
-        .text('Low');
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2);
 
     legend.append('text')
-        .attr('x', 10)
-        .attr('y', 170)
-        .attr('font-size', '9px')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 28)
+        .attr('font-size', '10px')
+        .attr('fill', '#22c55e')
+        .attr('font-weight', '600')
+        .text('High Return Rate');
+
+    legend.append('text')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 39)
+        .attr('font-size', '8px')
+        .attr('fill', '#94a3b8')
+        .text('(>70% - Good retention)');
+
+    // Low return rate (red) - stacked vertically below green
+    legend.append('circle')
+        .attr('cx', 20)
+        .attr('cy', colorSectionY + 62)
+        .attr('r', 9)
         .attr('fill', '#ef4444')
-        .text('High');
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2);
+
+    legend.append('text')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 58)
+        .attr('font-size', '10px')
+        .attr('fill', '#ef4444')
+        .attr('font-weight', '600')
+        .text('Low Return Rate');
+
+    legend.append('text')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 69)
+        .attr('font-size', '8px')
+        .attr('fill', '#94a3b8')
+        .text('(<70% - Retention risk)');
 
     // Center title
     svg.append('text')
@@ -727,9 +937,17 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('y', 30)
         .attr('text-anchor', 'middle')
         .attr('font-weight', 'bold')
-        .attr('font-size', '16px')
-        .attr('fill', '#333')
-        .text(`3-Axis Customer Cohorts - ${tier.replace('_', ' ').toUpperCase()} Tier`);
+        .attr('font-size', '18px')
+        .attr('fill', '#1e293b')
+        .text(`Visitor Segments - ${tier.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Tier`);
+
+    svg.append('text')
+        .attr('x', centerX)
+        .attr('y', 48)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .attr('fill', '#64748b')
+        .text('Each bubble is a unique visitor segment. Hover to explore details.');
 }
 
 /**

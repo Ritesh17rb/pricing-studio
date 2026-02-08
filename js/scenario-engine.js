@@ -129,6 +129,9 @@ export async function simulateScenario(scenario, options = {}) {
     const forecastedNetAdds = newVisitsForecast.forecastedAcquisition - forecastedNonReturningCount;
     const baselineNetAdds = baseline.newVisitors - Math.round(baseline.activeVisitors * (1 - baseline.returnRate));
 
+    // Calculate premium/VIP share (percentage of visitors on premium_pass or vip_pass)
+    const tierDistribution = await calculateTierDistribution(scenario.config.tier, demandForecast);
+
     // Generate time series forecast (12 months)
     const timeSeries = generateTimeSeries(
       demandForecast,
@@ -153,7 +156,8 @@ export async function simulateScenario(scenario, options = {}) {
         revenue: baseline.revenue,
         arpv: baseline.arpv,
         ltv: baselineLTV,
-        net_adds: baselineNetAdds
+        net_adds: baselineNetAdds,
+        premium_share: tierDistribution.baseline_premium_share
       },
 
       forecasted: {
@@ -163,7 +167,8 @@ export async function simulateScenario(scenario, options = {}) {
         revenue: revenueImpact.forecastedRevenue,
         arpv: forecastedARPV,
         ltv: forecastedLTV,
-        net_adds: forecastedNetAdds
+        net_adds: forecastedNetAdds,
+        premium_share: tierDistribution.forecasted_premium_share
       },
 
       delta: {
@@ -215,6 +220,8 @@ async function simulateBaselineScenario(scenario, options = {}) {
     let totalRevenue = 0;
     let weightedReturnRate = 0;
     let weightedNewVisitors = 0;
+    let premiumVisitors = 0;
+    let vipVisitors = 0;
 
     for (const tier of tiers) {
       const tierData = dailyData.filter(d => d.membership_tier === tier);
@@ -225,6 +232,13 @@ async function simulateBaselineScenario(scenario, options = {}) {
         totalRevenue += latestDay.daily_revenue;
         weightedReturnRate += latestDay.return_rate * latestDay.daily_visitors;
         weightedNewVisitors += latestDay.new_registrations;
+
+        // Track premium/VIP visitors
+        if (tier === 'premium_pass') {
+          premiumVisitors = latestDay.daily_visitors;
+        } else if (tier === 'vip_pass') {
+          vipVisitors = latestDay.daily_visitors;
+        }
       }
     }
 
@@ -233,6 +247,9 @@ async function simulateBaselineScenario(scenario, options = {}) {
     const avgLifetimeVisits = 8;
     const baselineLTV = avgARPV * avgLifetimeVisits;
     const baselineNetAdds = weightedNewVisitors - Math.round(totalVisitors * (1 - avgReturnRate));
+
+    // Calculate premium/VIP share
+    const premiumShare = totalVisitors > 0 ? (premiumVisitors + vipVisitors) / totalVisitors : 0;
 
     // Generate time series (no change over time for baseline)
     const timeSeries = [];
@@ -258,7 +275,8 @@ async function simulateBaselineScenario(scenario, options = {}) {
         revenue: totalRevenue,
         arpv: avgARPV,
         ltv: baselineLTV,
-        net_adds: baselineNetAdds
+        net_adds: baselineNetAdds,
+        premium_share: premiumShare
       },
 
       forecasted: {
@@ -268,7 +286,8 @@ async function simulateBaselineScenario(scenario, options = {}) {
         revenue: totalRevenue,
         arpv: avgARPV,
         ltv: baselineLTV,
-        net_adds: baselineNetAdds
+        net_adds: baselineNetAdds,
+        premium_share: premiumShare
       },
 
       delta: {
@@ -296,6 +315,92 @@ async function simulateBaselineScenario(scenario, options = {}) {
   } catch (error) {
     console.error('Error simulating baseline scenario:', error);
     throw error;
+  }
+}
+
+/**
+ * Calculate tier distribution and premium/VIP share
+ * @param {string} affectedTier - The tier being changed in the scenario
+ * @param {Object} demandForecast - Demand forecast for the affected tier
+ * @returns {Promise<Object>} Tier distribution with baseline and forecasted premium_share
+ */
+async function calculateTierDistribution(affectedTier, demandForecast) {
+  try {
+    // Get latest data for all tiers
+    const standardData = await getDailyData('standard_pass');
+    const premiumData = await getDailyData('premium_pass');
+    const vipData = await getDailyData('vip_pass');
+
+    // Calculate baseline visitors for each tier (latest day)
+    const standardVisitors = standardData && standardData.length > 0
+      ? standardData[standardData.length - 1].daily_visitors
+      : 0;
+    const premiumVisitors = premiumData && premiumData.length > 0
+      ? premiumData[premiumData.length - 1].daily_visitors
+      : 0;
+    const vipVisitors = vipData && vipData.length > 0
+      ? vipData[vipData.length - 1].daily_visitors
+      : 0;
+
+    const totalBaselineVisitors = standardVisitors + premiumVisitors + vipVisitors;
+    const baselinePremiumVipCount = premiumVisitors + vipVisitors;
+
+    // Calculate baseline premium/VIP share
+    const baseline_premium_share = totalBaselineVisitors > 0
+      ? baselinePremiumVipCount / totalBaselineVisitors
+      : 0;
+
+    // Calculate forecasted distribution based on which tier changed
+    let forecastedStandard = standardVisitors;
+    let forecastedPremium = premiumVisitors;
+    let forecastedVip = vipVisitors;
+
+    // Adjust the affected tier with the demand forecast
+    if (affectedTier === 'standard_pass') {
+      forecastedStandard = demandForecast.forecastedVisitors;
+    } else if (affectedTier === 'premium_pass') {
+      forecastedPremium = demandForecast.forecastedVisitors;
+    } else if (affectedTier === 'vip_pass') {
+      forecastedVip = demandForecast.forecastedVisitors;
+    }
+
+    const totalForecastedVisitors = forecastedStandard + forecastedPremium + forecastedVip;
+    const forecastedPremiumVipCount = forecastedPremium + forecastedVip;
+
+    // Calculate forecasted premium/VIP share
+    const forecasted_premium_share = totalForecastedVisitors > 0
+      ? forecastedPremiumVipCount / totalForecastedVisitors
+      : 0;
+
+    console.log('📊 Tier Distribution:', {
+      baseline: {
+        standard: standardVisitors,
+        premium: premiumVisitors,
+        vip: vipVisitors,
+        total: totalBaselineVisitors,
+        premium_share: (baseline_premium_share * 100).toFixed(1) + '%'
+      },
+      forecasted: {
+        standard: forecastedStandard,
+        premium: forecastedPremium,
+        vip: forecastedVip,
+        total: totalForecastedVisitors,
+        premium_share: (forecasted_premium_share * 100).toFixed(1) + '%'
+      },
+      affectedTier: affectedTier
+    });
+
+    return {
+      baseline_premium_share,
+      forecasted_premium_share
+    };
+  } catch (error) {
+    console.error('Error calculating tier distribution:', error);
+    // Return default values if calculation fails
+    return {
+      baseline_premium_share: 0.30, // Assume 30% baseline
+      forecasted_premium_share: 0.30
+    };
   }
 }
 

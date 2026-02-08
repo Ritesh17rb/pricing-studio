@@ -117,13 +117,15 @@ export async function getChurnCohorts(tier) {
 
       for (const segment of cohortSegments) {
         const elasticityData = segmentElasticity[tier]?.segment_elasticity?.[segment.composite_key];
-        if (elasticityData?.engagement_axis?.elasticity) {
-          elasticitySum += elasticityData.engagement_axis.elasticity;
+        if (elasticityData?.churn_axis?.elasticity) {
+          elasticitySum += elasticityData.churn_axis.elasticity;
           elasticityCount++;
         }
       }
 
-      const avgElasticity = elasticityCount > 0 ? elasticitySum / elasticityCount : -2.1;
+      const avgElasticity = elasticityCount > 0 ? elasticitySum / elasticityCount : 0.5;
+
+      console.log(`[Churn Cohort] ${segmentType}: size=${size}, elasticity=${avgElasticity.toFixed(3)} (from ${elasticityCount} segments)`);
 
       const nameMap = {
         'solo': 'Solo Visitors',

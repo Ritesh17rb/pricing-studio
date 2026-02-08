@@ -129,6 +129,31 @@ function updateSimulateButtonState() {
   }
 }
 
+function updateSaveButtonState() {
+  const saveBtn = document.getElementById('save-scenario-btn-models');
+  if (!saveBtn) return;
+
+  const activeResult = currentResultByModel[activeModelType];
+
+  // Disable if no result exists
+  if (!activeResult) {
+    saveBtn.disabled = true;
+    saveBtn.title = 'Run a simulation first';
+    return;
+  }
+
+  // Disable if selected scenario doesn't match simulated result
+  if (selectedScenario && activeResult.scenario_id !== selectedScenario.id) {
+    saveBtn.disabled = true;
+    saveBtn.title = 'Click "Simulate" first to update results for the selected scenario';
+    return;
+  }
+
+  // Enable if result matches selected scenario
+  saveBtn.disabled = false;
+  saveBtn.title = 'Save this scenario for comparison';
+}
+
 function updateResultContainerForModel() {
   const resultContainer = document.getElementById('result-container-models');
   if (!resultContainer) return;
@@ -223,6 +248,7 @@ function setActiveModelType(modelType) {
   syncScenarioSelectionUI();
   updateScenarioComparisonUI();
   updateSimulateButtonState();
+  updateSaveButtonState(); // Update save button state when switching models
   // Update Decision Engine display for this model
   updateDecisionEngineDisplay();
 }
@@ -1023,7 +1049,26 @@ async function loadData() {
 // Save current scenario
 function saveScenario() {
   const activeResult = currentResultByModel[activeModelType];
-  if (!activeResult) return;
+  if (!activeResult) {
+    showAlert('No simulation results to save. Please run a simulation first.', 'warning');
+    return;
+  }
+
+  // Check if the current result matches the selected scenario
+  if (selectedScenario && activeResult.scenario_id !== selectedScenario.id) {
+    showAlert(`You have "${selectedScenario.name}" selected but haven't simulated it yet. Click "Simulate" first, then save.`, 'warning');
+    return;
+  }
+
+  // Check for duplicates - don't save if this scenario_id is already saved
+  const isDuplicate = savedScenariosByModel[activeModelType].some(
+    s => s.scenario_id === activeResult.scenario_id
+  );
+
+  if (isDuplicate) {
+    showAlert(`Scenario "${activeResult.scenario_name}" is already saved. Try simulating a different scenario to compare.`, "warning");
+    return;
+  }
 
   savedScenariosByModel[activeModelType].push({
     ...activeResult,
@@ -2035,6 +2080,7 @@ function populateElasticityModelTabs() {
           selectedScenario = selected;
         }
         updateSimulateButtonState();
+        updateSaveButtonState(); // Update save button state when scenario is selected
         console.log('Selected scenario:', scenarioId);
       }
     });
@@ -2209,6 +2255,9 @@ function populateElasticityModelTabs() {
         resultContainer.style.display = 'block';
         resultContainer.scrollIntoView({ behavior: 'smooth' });
 
+        // Update save button state after successful simulation
+        updateSaveButtonState();
+
       } catch (error) {
         console.error('Error simulating scenario:', error);
         showAlert('Error running simulation: ' + error.message, 'danger');
@@ -2272,31 +2321,35 @@ function createScenarioCard(scenario) {
  */
 function calculateAcquisitionPayback(result) {
   try {
-    // Estimate CAC based on industry benchmarks (streaming: $25-50)
-    // For promos, CAC is higher due to discount
+    // Estimate visitor acquisition cost based on theme park industry benchmarks ($15-30)
+    // For promos, acquisition cost is higher due to discount
     const isPromo = result.scenario_config?.promotional_status === true;
-    const baseCAC = 35; // Industry median
-    const promoCACMultiplier = isPromo ? 1.4 : 1.0;
+    const baseCAC = 22; // Theme park industry median for marketing cost per new visitor
+    const promoCACMultiplier = isPromo ? 1.3 : 1.0;
     const estimatedCAC = baseCAC * promoCACMultiplier;
 
-    // Monthly contribution margin = ARPU - marginal costs (~30% of ARPU for content/platform)
-    const arpu = result.forecasted.arpu || 0;
-    const marginPercent = 0.70; // 70% contribution margin
-    const monthlyContribution = arpu * marginPercent;
+    // Contribution margin = ARPV - marginal costs (~20% for variable costs at theme parks)
+    const arpv = result.forecasted.arpv || result.forecasted.arpu || 0;
+    const marginPercent = 0.80; // 80% contribution margin (theme parks have high fixed costs, low variable costs)
+    const visitContribution = arpv * marginPercent;
 
-    if (monthlyContribution <= 0) {
+    if (visitContribution <= 0) {
       return { value: 'N/A', label: 'Negative margin' };
     }
 
-    const paybackMonths = estimatedCAC / monthlyContribution;
+    // Calculate how many visits needed to recover acquisition cost
+    const visitsToPayback = estimatedCAC / visitContribution;
 
-    // Format output
-    if (paybackMonths > 24) {
+    // Format output based on visitor frequency (assume avg 4 visits/year for theme parks)
+    const avgVisitsPerYear = 4;
+    const monthsToPayback = (visitsToPayback / avgVisitsPerYear) * 12;
+
+    if (monthsToPayback > 24) {
       return { value: '>24', label: 'months' };
-    } else if (paybackMonths < 1) {
+    } else if (monthsToPayback < 1) {
       return { value: '<1', label: 'month' };
     } else {
-      return { value: paybackMonths.toFixed(1), label: 'months' };
+      return { value: monthsToPayback.toFixed(1), label: 'months' };
     }
   } catch (error) {
     console.error('Error calculating acquisition payback:', error);
@@ -2330,16 +2383,16 @@ function calculateChurnPayback(result) {
       return { value: '12+', label: 'weeks' };
     }
 
-    // Fallback: Estimate based on churn delta magnitude
-    const churnDelta = Math.abs(result.delta.churn_rate || 0);
+    // Fallback: Estimate based on return rate delta magnitude
+    const returnRateDelta = Math.abs(result.delta.return_rate || result.delta.churn_rate || 0);
 
-    if (churnDelta < 0.01) {
+    if (returnRateDelta < 0.01) {
       // Low impact: stabilizes quickly
       return { value: '<4', label: 'weeks' };
-    } else if (churnDelta < 0.03) {
+    } else if (returnRateDelta < 0.03) {
       // Medium impact: stabilizes in 4-8 weeks
       return { value: '4-8', label: 'weeks' };
-    } else if (churnDelta < 0.05) {
+    } else if (returnRateDelta < 0.05) {
       // High impact: stabilizes in 8-12 weeks
       return { value: '8-12', label: 'weeks' };
     } else {
@@ -2491,11 +2544,11 @@ function displayResultsInTabs(result, isRedisplay = false) {
     <div class="col-md-3">
       <div class="card">
         <div class="card-body text-center">
-          <div class="text-muted small">ARPU</div>
-          <div class="h4 mb-1">${formatCurrency(result.forecasted.arpu)}</div>
-          <div class="small ${result.delta.arpu >= 0 ? 'text-success' : 'text-danger'}">
-            ${result.delta.arpu >= 0 ? '+' : ''}${formatCurrency(result.delta.arpu)}
-            (${formatPercent(result.delta.arpu_pct, 1)})
+          <div class="text-muted small">ARPV</div>
+          <div class="h4 mb-1">${formatCurrency(result.forecasted.arpv || result.forecasted.arpu || 0)}</div>
+          <div class="small ${(result.delta.arpv_pct || result.delta.arpu_pct || 0) >= 0 ? 'text-success' : 'text-danger'}">
+            ${(result.delta.arpv || result.delta.arpu || 0) >= 0 ? '+' : ''}${formatCurrency(result.delta.arpv || result.delta.arpu || 0)}
+            (${formatPercent(result.delta.arpv_pct || result.delta.arpu_pct || 0, 1)})
           </div>
         </div>
       </div>
@@ -2503,10 +2556,10 @@ function displayResultsInTabs(result, isRedisplay = false) {
     <div class="col-md-3">
       <div class="card">
         <div class="card-body text-center">
-          <div class="text-muted small">Churn Rate</div>
-          <div class="h4 mb-1">${formatPercent((result.forecasted.churnRate || result.forecasted.churn_rate || 0), 2)}</div>
-          <div class="small ${result.delta.churn_rate <= 0 ? 'text-success' : 'text-danger'}">
-            ${result.delta.churn_rate >= 0 ? '+' : ''}${formatPercent(result.delta.churn_rate, 2)}
+          <div class="text-muted small">Return Rate</div>
+          <div class="h4 mb-1">${formatPercent((result.forecasted.return_rate || result.forecasted.churnRate || result.forecasted.churn_rate || 0), 2)}</div>
+          <div class="small ${(result.delta.return_rate || result.delta.churn_rate || 0) >= 0 ? 'text-success' : 'text-danger'}">
+            ${(result.delta.return_rate || result.delta.churn_rate || 0) >= 0 ? '+' : ''}${formatPercent(result.delta.return_rate || result.delta.churn_rate || 0, 2)}
           </div>
         </div>
       </div>
@@ -3059,8 +3112,35 @@ async function rankAndDisplayScenarios() {
     // Get selected objective and constraints
     const objective = document.getElementById('objective-lens-select').value;
 
+    // DEBUG: Log saved scenarios before ranking
+    console.log('🔍 Ranking scenarios - Input data:', {
+      count: savedScenarios.length,
+      objective: objective,
+      scenarios: savedScenarios.map(s => ({
+        name: s.scenario_name,
+        id: s.scenario_id,
+        revenue_pct: s.delta?.revenue_pct,
+        visitors_pct: s.delta?.visitors_pct,
+        churn_rate: s.delta?.churn_rate,
+        premium_share: s.forecasted?.premium_share
+      }))
+    });
+
     // Rank scenarios
     const rankedScenarios = rankScenarios(savedScenarios, objective, {});
+
+    // DEBUG: Log ranked results
+    console.log('🏆 Ranked scenarios output:', {
+      count: rankedScenarios.length,
+      results: rankedScenarios.map(s => ({
+        rank: s.rank,
+        name: s.scenario_name,
+        score: s.decision_score,
+        revenue_pct: s.delta?.revenue_pct,
+        visitors_pct: s.delta?.visitors_pct,
+        risk: s.risk_level
+      }))
+    });
 
     if (rankedScenarios.length === 0) {
       showAlert('No scenarios available to rank. Try saving more scenarios.', 'warning');
@@ -3118,25 +3198,25 @@ function displayTop3Scenarios(top3) {
               <div class="row g-1 small">
                 <div class="col-6">
                   <strong>Revenue:</strong>
-                  <span class="${scenario.delta.revenue >= 0 ? 'text-success' : 'text-danger'}">
-                    ${scenario.delta.revenue >= 0 ? '+' : ''}${formatPercent(scenario.delta.revenue_pct, 1)}
+                  <span class="${(scenario.delta.revenue_pct || 0) >= 0 ? 'text-success' : 'text-danger'}">
+                    ${(scenario.delta.revenue_pct || 0) >= 0 ? '+' : ''}${(scenario.delta.revenue_pct || 0).toFixed(1)}%
                   </span>
                 </div>
                 <div class="col-6">
                   <strong>Visitors:</strong>
-                  <span class="${scenario.delta.visitors >= 0 ? 'text-success' : 'text-danger'}">
-                    ${scenario.delta.visitors >= 0 ? '+' : ''}${formatPercent(scenario.delta.visitors_pct, 1)}
+                  <span class="${(scenario.delta.visitors_pct || 0) >= 0 ? 'text-success' : 'text-danger'}">
+                    ${(scenario.delta.visitors_pct || 0) >= 0 ? '+' : ''}${(scenario.delta.visitors_pct || 0).toFixed(1)}%
                   </span>
                 </div>
                 <div class="col-6">
-                  <strong>Churn:</strong>
-                  <span class="${scenario.delta.churn_rate <= 0 ? 'text-success' : 'text-danger'}">
-                    ${scenario.delta.churn_rate >= 0 ? '+' : ''}${formatPercent(scenario.delta.churn_rate, 2)}pp
+                  <strong>Non-Return:</strong>
+                  <span class="${(scenario.delta.churn_rate || 0) <= 0 ? 'text-success' : 'text-danger'}">
+                    ${(scenario.delta.churn_rate || 0) >= 0 ? '+' : ''}${((scenario.delta.churn_rate || 0) * 100).toFixed(2)}pp
                   </span>
                 </div>
                 <div class="col-6">
                   <strong>Score:</strong>
-                  <span class="text-primary fw-bold">${scenario.decision_score.toFixed(1)}</span>
+                  <span class="text-primary fw-bold">${(scenario.decision_score || 0).toFixed(1)}</span>
                 </div>
               </div>
             </div>
