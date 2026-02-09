@@ -56,13 +56,13 @@ const DEFAULT_SYSTEM_PROMPT = `You are the Scenario Analysis Assistant for the L
 - Help users understand price elasticity and seasonal demand patterns
 
 **Current Business Context:**
-- Total Daily Visitors: {currentSubscribers}
-- Daily Revenue: {currentRevenue}
-- Average Non-Return Rate: {currentChurn}
+- Total Daily Visitors: {currentVisitors}
+- Monthly Revenue: {currentRevenue}
+- Average Return Rate: {currentReturnRate}
 
 **Price Elasticity by Pass Type:**
-- Standard Pass ($79): {elasticityAdSupported} (Most price-sensitive - families and budget visitors)
-- Premium Pass ($139): {elasticityAdFree} (Moderately elastic - regular visitors)
+- Standard Pass ($79): {elasticityStandard} (Most price-sensitive - families and budget visitors)
+- Premium Pass ($139): {elasticityPremium} (Moderately elastic - regular visitors)
 - VIP Pass ($249): {elasticityVIP} (Less elastic - premium experience seekers)
 
 **Available Scenarios:**
@@ -143,8 +143,8 @@ User: "Which saved scenario is best for revenue?"
 User: "Show me high churn segments"
 → Use query_segments with filter: {churn_risk: "high"}
 
-User: "What are the largest segments in ad_supported tier?"
-→ Use query_segments with filter: {tier: "ad_supported", size: "large"}`;
+User: "What are the largest segments in standard_pass tier?"
+→ Use query_segments with filter: {tier: "standard_pass", size: "large"}`;
 
 /**
  * Initialize chat module with data context
@@ -316,15 +316,16 @@ function buildSystemPrompt() {
           totalARPU += parseFloat(seg.avg_arpu) || 0;
         });
 
-        const avgChurn = (totalChurn / totalSegments * 100).toFixed(2);
+        const avgReturnRate = (totalChurn / totalSegments * 100).toFixed(2);
         const avgARPU = (totalARPU / totalSegments).toFixed(2);
 
         segmentSummary = `${totalSegments} behavioral segments across 3 tiers:
-- Ad-Lite: ${tierCounts['ad_supported'] || 0} segments
-- Ad-Free: ${tierCounts['ad_free'] || 0} segments
-Total Subscribers: ${totalSubscribers.toLocaleString()}
-Avg Churn Rate: ${avgChurn}%
-Avg ARPU: $${avgARPU}`;
+- Standard Pass: ${tierCounts['standard_pass'] || 0} segments
+- Premium Pass: ${tierCounts['premium_pass'] || 0} segments
+- VIP Pass: ${tierCounts['vip_pass'] || 0} segments
+Total Visitors: ${totalSubscribers.toLocaleString()}
+Avg Return Rate: ${avgReturnRate}%
+Avg ARPV: $${avgARPU}`;
 
         // List available segments for targeting (15 predefined segments)
         availableSegments = `15 predefined segments for targeted pricing:
@@ -356,11 +357,12 @@ You can also target by behavioral axes:
 
   // Replace placeholders with actual values
   const prompt = promptTemplate
-    .replace('{currentSubscribers}', businessContext.currentSubscribers?.toLocaleString() || 'N/A')
+    .replace('{currentVisitors}', businessContext.currentVisitors?.toLocaleString() || 'N/A')
     .replace('{currentRevenue}', businessContext.currentRevenue ? `$${businessContext.currentRevenue.toLocaleString()}` : 'N/A')
-    .replace('{currentChurn}', businessContext.currentChurn ? `${(businessContext.currentChurn * 100).toFixed(2)}%` : 'N/A')
-    .replace('{elasticityAdSupported}', (businessContext.elasticityByTier?.ad_supported || -2.1).toString())
-    .replace('{elasticityAdFree}', (businessContext.elasticityByTier?.ad_free || -1.9).toString())
+    .replace('{currentReturnRate}', businessContext.currentReturnRate !== undefined ? `${(businessContext.currentReturnRate * 100).toFixed(2)}%` : 'N/A')
+    .replace('{elasticityStandard}', (businessContext.elasticityByTier?.standard_pass || -1.9).toString())
+    .replace('{elasticityPremium}', (businessContext.elasticityByTier?.premium_pass || -1.5).toString())
+    .replace('{elasticityVIP}', (businessContext.elasticityByTier?.vip_pass || -1.3).toString())
     .replace('{availableScenarios}', allScenarios.slice(0, 8).map(s => `- ${s.id}: ${s.name}`).join('\n') || 'None loaded yet')
     .replace('{currentSimulation}', currentSim && currentSim.delta ? `Active: "${currentSim.scenario_name}" - Revenue ${currentSim.delta.revenue_pct >= 0 ? '+' : ''}${currentSim.delta.revenue_pct.toFixed(1)}%, Subscribers ${currentSim.delta.visitors_pct >= 0 ? '+' : ''}${currentSim.delta.visitors_pct.toFixed(1)}%` : currentSim ? `Active: "${currentSim.scenario_name}"` : 'No scenario simulated yet')
     .replace('{savedScenarios}', savedScenariosText)
@@ -457,8 +459,8 @@ function getToolDefinitions() {
           properties: {
             tier: {
               type: "string",
-              enum: ["ad_supported", "ad_free"],
-              description: "The subscription tier to apply changes to"
+              enum: ["standard_pass", "premium_pass", "vip_pass", "economy_pass"],
+              description: "The pass tier to apply changes to"
             },
             price_change: {
               type: "number",
@@ -487,8 +489,8 @@ function getToolDefinitions() {
           properties: {
             tier: {
               type: "string",
-              enum: ["ad_supported", "ad_free", "all"],
-              description: "Filter by subscription tier. Use 'all' to include all tiers."
+              enum: ["standard_pass", "premium_pass", "vip_pass", "economy_pass", "all"],
+              description: "Filter by pass tier. Use 'all' to include all tiers."
             },
             size: {
               type: "string",

@@ -569,8 +569,9 @@ async function initializeChatContext() {
         demandCurve: {
           description: "Shows price elasticity - how demand changes with price for each tier",
           tiers: [
-            { name: 'Ad-Lite', elasticity: elasticityParams.tiers.ad_supported.base_elasticity, price: 5.99 },
-            { name: 'Ad-Free', elasticity: elasticityParams.tiers.ad_free.base_elasticity, price: 9.99 }
+            { name: 'Standard Pass', elasticity: elasticityParams.standard_pass?.base_elasticity || -1.9, price: 79 },
+            { name: 'Premium Pass', elasticity: elasticityParams.premium_pass?.base_elasticity || -1.5, price: 139 },
+            { name: 'VIP Pass', elasticity: elasticityParams.vip_pass?.base_elasticity || -1.3, price: 249 }
           ]
         },
         tierMix: currentResult ? {
