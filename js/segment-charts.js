@@ -136,8 +136,8 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
             elasticity: elasticity,
             // Use cohort-adjusted KPIs from segment data
             kpi: axis === 'engagement' ? seg.avg_return_rate :
-                 axis === 'monetization' ? seg.avg_arpv :
-                 seg.avg_cac,
+                axis === 'monetization' ? seg.avg_arpv :
+                    seg.avg_cac,
             visitors: parseInt(seg.visitor_count || 0)
         });
     });
@@ -223,9 +223,9 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
 
     // Get x/y coordinates based on axis
     const getX = d => axis === 'acquisition' ? d.acquisition :
-                     axis === 'engagement' ? d.engagement : d.monetization;
+        axis === 'engagement' ? d.engagement : d.monetization;
     const getY = d => axis === 'acquisition' ? d.engagement :
-                     axis === 'engagement' ? d.monetization : d.acquisition;
+        axis === 'engagement' ? d.monetization : d.acquisition;
 
     cells.append('rect')
         .attr('x', d => xScale(getX(d)))
@@ -237,7 +237,7 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
         .attr('stroke-width', 2)
         .attr('rx', 4)
         .style('cursor', 'pointer')
-        .on('mouseenter', function(event, d) {
+        .on('mouseenter', function (event, d) {
             d3.select(this)
                 .attr('stroke-width', 4)
                 .attr('stroke', '#000');
@@ -264,14 +264,14 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
                         <strong>Elasticity:</strong> ${d.elasticity.toFixed(2)}<br>
                         <strong>${axis === 'engagement' ? 'Return Rate' :
-                                axis === 'monetization' ? 'ARPV' : 'CAC Sensitivity'}:</strong>
+                        axis === 'monetization' ? 'ARPV' : 'CAC Sensitivity'}:</strong>
                         ${axis === 'engagement' ? (d.kpi * 100).toFixed(2) + '%' :
-                          axis === 'monetization' ? '$' + d.kpi.toFixed(2) : d.kpi.toFixed(2)}<br>
+                        axis === 'monetization' ? '$' + d.kpi.toFixed(2) : d.kpi.toFixed(2)}<br>
                         <strong>Visitors:</strong> ${d.visitors.toLocaleString()}
                     </div>
                 `);
         })
-        .on('mousemove', function(event) {
+        .on('mousemove', function (event) {
             // Calculate position relative to container
             const containerNode = container.node();
             const containerRect = containerNode.getBoundingClientRect();
@@ -282,7 +282,7 @@ export function renderSegmentElasticityHeatmap(containerId, tier, filters = {}, 
                 .style('left', (x + 15) + 'px')
                 .style('top', (y - 30) + 'px');
         })
-        .on('mouseleave', function() {
+        .on('mouseleave', function () {
             d3.select(this)
                 .attr('stroke-width', 2)
                 .attr('stroke', '#fff');
@@ -427,8 +427,9 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                     <ul class="mb-0 mt-2 small">
                         <li><strong>Position:</strong> Shows visitor characteristics on 3 dimensions (closer to an axis = stronger trait)</li>
                         <li><strong>Size:</strong> Larger bubbles = more visitors in that segment</li>
-                        <li><strong>Color:</strong> <span style="color: #22c55e;">●</span> Green = High return rate (good retention) |
-                            <span style="color: #ef4444;">●</span> Red = Low return rate (retention risk)</li>
+                        <li><strong>Color:</strong> <span style="color: #22c55e;">●</span> Green = High (>70%) |
+                            <span style="color: #f97316;">●</span> Orange = Medium (40-70%) |
+                            <span style="color: #ef4444;">●</span> Red = Low (<40%)</li>
                         <li><strong>Hover:</strong> See detailed visitor counts, return rates, and spending patterns</li>
                     </ul>
                 </div>
@@ -670,10 +671,12 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .domain([0, d3.max(segmentPositions, d => d.visitor_count)])
         .range([3, 20]);
 
-    // Color scale based on return rate
-    const returnRateScale = d3.scaleSequential(d3.interpolateRdYlGn)
-        .domain([d3.max(segmentPositions, d => d.avg_return_rate),
-                 d3.min(segmentPositions, d => d.avg_return_rate)]);
+    // Color scale based on return rate - Matching the Legend
+    const getSegmentColor = (rate) => {
+        if (rate >= 0.70) return '#22c55e'; // High - Green
+        if (rate >= 0.40) return '#f97316'; // Medium - Orange
+        return '#ef4444'; // Low - Red
+    };
 
     // Draw segment data points
     svg.selectAll('.segment-point')
@@ -683,12 +686,12 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('cx', d => d.x)
         .attr('cy', d => d.y)
         .attr('r', d => radiusScale(d.visitor_count))
-        .attr('fill', d => returnRateScale(d.avg_return_rate))
+        .attr('fill', d => getSegmentColor(d.avg_return_rate))
         .attr('stroke', '#fff')
         .attr('stroke-width', 2)
         .attr('opacity', 0.7)
         .style('cursor', 'pointer')
-        .on('mouseenter', function(event, d) {
+        .on('mouseenter', function (event, d) {
             // Highlight current segment
             d3.select(this)
                 .attr('opacity', 1)
@@ -697,7 +700,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
 
             // Dim all other segments
             svg.selectAll('.segment-point')
-                .filter(function(otherD) { return otherD !== d; })
+                .filter(function (otherD) { return otherD !== d; })
                 .attr('opacity', 0.2);
 
             const segmentInfo = window.segmentEngine.formatCompositeKey(d.compositeKey);
@@ -724,8 +727,8 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
 
             // Return rate quality indicator
             const returnQuality = d.avg_return_rate > 0.75 ? '🟢 Excellent' :
-                                  d.avg_return_rate > 0.60 ? '🟡 Good' :
-                                  d.avg_return_rate > 0.40 ? '🟠 Fair' : '🔴 At Risk';
+                d.avg_return_rate > 0.60 ? '🟡 Good' :
+                    d.avg_return_rate > 0.40 ? '🟠 Fair' : '🔴 At Risk';
 
             tooltip
                 .style('display', 'block')
@@ -752,7 +755,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                     </div>
                 `);
         })
-        .on('mousemove', function(event) {
+        .on('mousemove', function (event) {
             // Calculate position relative to container
             const containerNode = container.node();
             const containerRect = containerNode.getBoundingClientRect();
@@ -763,7 +766,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
                 .style('left', (x + 15) + 'px')
                 .style('top', (y - 30) + 'px');
         })
-        .on('mouseleave', function() {
+        .on('mouseleave', function () {
             // Restore all segments to original state
             svg.selectAll('.segment-point')
                 .attr('opacity', 0.7)
@@ -772,7 +775,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
 
             tooltip.style('display', 'none');
         })
-        .on('click', function(event, d) {
+        .on('click', function (event, d) {
             // Future: Show detailed segment analysis
         });
 
@@ -785,7 +788,7 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('x', legendX - 15)
         .attr('y', legendY - 15)
         .attr('width', 180)
-        .attr('height', 280)
+        .attr('height', 330)
         .attr('fill', '#ffffff')
         .attr('stroke', '#cbd5e1')
         .attr('stroke-width', 1.5)
@@ -830,10 +833,18 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .text('Number of visitors in segment');
 
     const maxVisitors = d3.max(segmentPositions, d => d.visitor_count) || 10000;
+
+    // Round to nice numbers (nearest 10 or 100)
+    const roundToNice = (num) => {
+        if (num < 100) return Math.round(num / 10) * 10 || 10;
+        if (num < 1000) return Math.round(num / 50) * 50;
+        return Math.round(num / 100) * 100;
+    };
+
     const sizeExamples = [
-        { count: Math.floor(maxVisitors * 0.15), label: 'Small' },
-        { count: Math.floor(maxVisitors * 0.45), label: 'Medium' },
-        { count: Math.floor(maxVisitors * 0.85), label: 'Large' }
+        { count: roundToNice(maxVisitors * 0.15), label: 'Small' },
+        { count: roundToNice(maxVisitors * 0.45), label: 'Medium' },
+        { count: roundToNice(maxVisitors * 0.85), label: 'Large' }
     ];
 
     sizeExamples.forEach((example, i) => {
@@ -907,12 +918,12 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('fill', '#94a3b8')
         .text('(>70% - Good retention)');
 
-    // Low return rate (red) - stacked vertically below green
+    // Medium return rate (orange)
     legend.append('circle')
         .attr('cx', 20)
         .attr('cy', colorSectionY + 62)
         .attr('r', 9)
-        .attr('fill', '#ef4444')
+        .attr('fill', '#f97316')
         .attr('stroke', '#fff')
         .attr('stroke-width', 2);
 
@@ -920,16 +931,40 @@ export function render3AxisRadialChart(containerId, tier, highlightSegment = nul
         .attr('x', 40)
         .attr('y', colorSectionY + 58)
         .attr('font-size', '10px')
-        .attr('fill', '#ef4444')
+        .attr('fill', '#f97316')
         .attr('font-weight', '600')
-        .text('Low Return Rate');
+        .text('Medium Return Rate');
 
     legend.append('text')
         .attr('x', 40)
         .attr('y', colorSectionY + 69)
         .attr('font-size', '8px')
         .attr('fill', '#94a3b8')
-        .text('(<70% - Retention risk)');
+        .text('(40-70% - Fair retention)');
+
+    // Low return rate (red)
+    legend.append('circle')
+        .attr('cx', 20)
+        .attr('cy', colorSectionY + 92)
+        .attr('r', 9)
+        .attr('fill', '#ef4444')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2);
+
+    legend.append('text')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 88)
+        .attr('font-size', '10px')
+        .attr('fill', '#ef4444')
+        .attr('font-weight', '600')
+        .text('Low Return Rate');
+
+    legend.append('text')
+        .attr('x', 40)
+        .attr('y', colorSectionY + 99)
+        .attr('font-size', '8px')
+        .attr('fill', '#94a3b8')
+        .text('(<40% - Retention risk)');
 
     // Center title
     svg.append('text')
@@ -969,100 +1004,215 @@ export function renderSegmentScatterPlot(containerId, tier) {
     }
 
     // Prepare data
-    const data = segments.map(seg => ({
-        compositeKey: seg.compositeKey,
-        visitors: parseInt(seg.visitor_count),
-        churn_rate: parseFloat(seg.avg_return_rate),
-        arpu: parseFloat(seg.avg_arpv),
-        elasticity: window.segmentEngine.getElasticity(tier, seg.compositeKey, 'engagement') || -2.0
-    }));
+    // Prepare data with robust fallbacks
+    const data = segments.map(seg => {
+        // Robust extraction for return rate (or inverse churn)
+        let returnRate = 0;
+        if (seg.avg_return_rate !== undefined) {
+            returnRate = parseFloat(seg.avg_return_rate);
+        } else if (seg.avg_churn_rate !== undefined) {
+            returnRate = 1 - parseFloat(seg.avg_churn_rate);
+        }
 
-    // Set up dimensions
-    const margin = { top: 40, right: 150, bottom: 60, left: 80 };
-    const width = 900 - margin.left - margin.right;
-    const height = 600 - margin.top - margin.bottom;
+        // Robust extraction for revenue metric
+        let revenueMetric = 0;
+        if (seg.avg_arpv !== undefined) {
+            revenueMetric = parseFloat(seg.avg_arpv);
+        } else if (seg.avg_arpu !== undefined) {
+            revenueMetric = parseFloat(seg.avg_arpu);
+        }
+
+        return {
+            compositeKey: seg.compositeKey,
+            visitors: parseInt(seg.visitor_count) || 0,
+            return_rate: returnRate,
+            revenue_metric: revenueMetric,
+            elasticity: window.segmentEngine.getElasticity(tier, seg.compositeKey, 'engagement') || -2.0
+        };
+    }).filter(d => d.visitors > 0);
+
+    // Set up dimensions with generous margins
+    const margin = { top: 70, right: 180, bottom: 100, left: 100 };
+    const width = 950 - margin.left - margin.right;
+    const height = 650 - margin.top - margin.bottom;
 
     const svg = container.append('svg')
         .attr('width', width + margin.left + margin.right)
         .attr('height', height + margin.top + margin.bottom)
+        .style('background', '#ffffff') // Solid white background for max contrast
+        .style('border-radius', '8px')
+        .style('box-shadow', '0 4px 6px -1px rgba(0, 0, 0, 0.1)')
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Scales
+    // Add Title
+    svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', -35)
+        .attr('text-anchor', 'middle')
+        .attr('font-weight', '800')
+        .attr('font-size', '20px')
+        .attr('fill', '#0f172a')
+        .text(`Segment Analysis - ${tier.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}`);
+
+    // scales
+    const xMax = d3.max(data, d => d.visitors) || 1000;
+    const yMin = d3.min(data, d => d.elasticity) || -2.0;
+    const yMax = d3.max(data, d => d.elasticity) || 0;
+    const maxBubbleRadius = d3.max(data, d => d.revenue_metric) || 100;
+
+    // Calculate max radius for padding
+    const radiusScaleTemp = d3.scaleSqrt()
+        .domain([0, maxBubbleRadius])
+        .range([6, 22]);
+    const maxRadius = radiusScaleTemp(maxBubbleRadius);
+
+    // Add padding that accounts for bubble sizes
+    // Convert pixel radius back to data units for proper padding
+    const xPadding = (xMax * 0.05) + (maxRadius * xMax / width); // 5% + bubble size
+    const yPadding = Math.abs(yMin) * 0.1; // 10% padding
+
     const xScale = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.visitors)])
+        .domain([0, xMax + xPadding])
         .range([0, width])
         .nice();
 
     const yScale = d3.scaleLinear()
-        .domain([d3.min(data, d => d.elasticity), 0])
+        .domain([yMin - yPadding, yMax + 0.5]) // Padding on both ends
         .range([height, 0])
         .nice();
 
-    const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
-        .domain([d3.max(data, d => d.churn_rate), d3.min(data, d => d.churn_rate)]);
+    const getScatterColor = (rate) => {
+        if (rate >= 0.70) return '#16a34a'; // High - Vibrant Green
+        if (rate >= 0.40) return '#f97316'; // Medium - Vibrant Orange
+        return '#dc2626'; // Low - Vibrant Red
+    };
 
     const radiusScale = d3.scaleSqrt()
-        .domain([0, d3.max(data, d => d.arpu)])
-        .range([4, 15]);
+        .domain([0, d3.max(data, d => d.revenue_metric) || 100])
+        .range([6, 22]);
+
+    // Gridlines X (Vertical)
+    svg.append('g')
+        .attr('class', 'grid')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(xScale).tickSize(-height).tickFormat('').ticks(10))
+        .attr('stroke-opacity', 0.1)
+        .attr('stroke', '#000');
+
+    // Gridlines Y (Horizontal)
+    svg.append('g')
+        .attr('class', 'grid')
+        .call(d3.axisLeft(yScale).tickSize(-width).tickFormat('').ticks(10))
+        .attr('stroke-opacity', 0.1)
+        .attr('stroke', '#000');
 
     // Axes
-    svg.append('g')
-        .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(xScale).tickFormat(d => (d / 1000).toFixed(0) + 'K'));
+    const xAxis = d3.axisBottom(xScale)
+        .tickFormat(d => d >= 1000 ? (d / 1000).toFixed(0) + 'k' : d)
+        .tickPadding(10);
+    const yAxis = d3.axisLeft(yScale)
+        .tickPadding(10);
 
-    svg.append('g')
-        .call(d3.axisLeft(yScale));
+    const gX = svg.append('g').attr('transform', `translate(0,${height})`).call(xAxis);
+    gX.selectAll('path').attr('stroke', '#0f172a').attr('stroke-width', '2px');
+    gX.selectAll('line').attr('stroke', '#0f172a').attr('stroke-width', '1px');
+    gX.selectAll('text').attr('fill', '#0f172a').attr('font-weight', '600').attr('font-size', '12px');
 
-    // Axis labels
+    const gY = svg.append('g').call(yAxis);
+    gY.selectAll('path').attr('stroke', '#0f172a').attr('stroke-width', '2px');
+    gY.selectAll('line').attr('stroke', '#0f172a').attr('stroke-width', '1px');
+    gY.selectAll('text').attr('fill', '#0f172a').attr('font-weight', '600').attr('font-size', '12px');
+
+    // Reference Lines (Industry Standard) - Averages
+    const avgVisitors = d3.mean(data, d => d.visitors);
+    const avgElasticity = d3.mean(data, d => d.elasticity);
+
+    if (avgVisitors) {
+        svg.append('line')
+            .attr('x1', xScale(avgVisitors))
+            .attr('x2', xScale(avgVisitors))
+            .attr('y1', 0)
+            .attr('y2', height)
+            .attr('stroke', '#64748b')
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', '4,4');
+
+        svg.append('text')
+            .attr('x', xScale(avgVisitors) + 5)
+            .attr('y', 20)
+            .attr('font-size', '11px')
+            .attr('fill', '#64748b')
+            .text(`Avg Visitors: ${Math.round(avgVisitors).toLocaleString()}`);
+    }
+
+    if (avgElasticity) {
+        svg.append('line')
+            .attr('x1', 0)
+            .attr('x2', width)
+            .attr('y1', yScale(avgElasticity))
+            .attr('y2', yScale(avgElasticity))
+            .attr('stroke', '#64748b')
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', '4,4');
+
+        svg.append('text')
+            .attr('x', width - 10)
+            .attr('y', yScale(avgElasticity) - 5)
+            .attr('text-anchor', 'end')
+            .attr('font-size', '11px')
+            .attr('fill', '#64748b')
+            .text(`Avg Elasticity: ${avgElasticity.toFixed(2)}`);
+    }
+
+    // Axis labels (Larger and bolder)
     svg.append('text')
         .attr('x', width / 2)
-        .attr('y', height + 50)
+        .attr('y', height + 60)
         .attr('text-anchor', 'middle')
-        .attr('font-weight', 'bold')
-        .text('Visitor Count');
+        .attr('font-weight', '800')
+        .attr('font-size', '16px')
+        .attr('fill', '#0f172a')
+        .text('Visitor Count (Segment Size)');
 
     svg.append('text')
         .attr('transform', 'rotate(-90)')
         .attr('x', -height / 2)
-        .attr('y', -60)
+        .attr('y', -70)
         .attr('text-anchor', 'middle')
-        .attr('font-weight', 'bold')
-        .text('Price Elasticity');
-
-    // Quadrant line
-    svg.append('line')
-        .attr('x1', 0)
-        .attr('x2', width)
-        .attr('y1', yScale(-2.0))
-        .attr('y2', yScale(-2.0))
-        .attr('stroke', '#ccc')
-        .attr('stroke-dasharray', '5,5')
-        .attr('opacity', 0.5);
+        .attr('font-weight', '800')
+        .attr('font-size', '16px')
+        .attr('fill', '#0f172a')
+        .text('Price Elasticity (Sensitivity)');
 
     // Tooltip
     const tooltip = container.append('div')
-        .attr('class', 'position-absolute bg-dark text-white p-2 rounded shadow-sm')
+        .attr('class', 'position-absolute bg-dark text-white p-3 rounded shadow')
         .style('display', 'none')
         .style('pointer-events', 'none')
-        .style('font-size', '11px')
-        .style('z-index', '1000');
+        .style('z-index', '1000')
+        .style('min-width', '220px')
+        .style('font-size', '13px')
+        .style('border', '1px solid rgba(255,255,255,0.1)');
 
-    // Plot points
+    // Plot points with white stroke for separation
     svg.selectAll('.segment-point')
         .data(data)
         .join('circle')
         .attr('class', 'segment-point')
         .attr('cx', d => xScale(d.visitors))
         .attr('cy', d => yScale(d.elasticity))
-        .attr('r', d => radiusScale(d.arpu))
-        .attr('fill', d => colorScale(d.churn_rate))
-        .attr('opacity', 0.7)
+        .attr('r', d => radiusScale(d.revenue_metric))
+        .attr('fill', d => getScatterColor(d.return_rate))
+        .attr('opacity', 0.75) // Slightly clearer
         .attr('stroke', '#fff')
-        .attr('stroke-width', 1)
+        .attr('stroke-width', 1.5)
         .style('cursor', 'pointer')
-        .on('mouseenter', function(event, d) {
-            d3.select(this).attr('opacity', 1).attr('stroke-width', 2);
+        .on('mouseenter', function (event, d) {
+            d3.select(this)
+                .attr('opacity', 1)
+                .attr('stroke-width', 3)
+                .attr('stroke', '#0f172a'); // Dark stroke on hover
 
             const containerNode = container.node();
             const containerRect = containerNode.getBoundingClientRect();
@@ -1070,86 +1220,149 @@ export function renderSegmentScatterPlot(containerId, tier) {
             const y = event.clientY - containerRect.top;
 
             tooltip.style('display', 'block')
-                .style('left', x + 10 + 'px')
+                .style('left', x + 15 + 'px')
                 .style('top', y - 20 + 'px')
                 .html(`
-                    <strong>${window.segmentEngine.formatCompositeKey(d.compositeKey)}</strong><br>
-                    Visitors: ${d.visitors.toLocaleString()}<br>
-                    Elasticity: ${d.elasticity.toFixed(2)}<br>
-                    Return Rate: ${(d.churn_rate * 100).toFixed(2)}%<br>
-                    ARPV: $${d.arpu.toFixed(2)}
+                    <div class="fw-bold mb-2" style="font-size:14px; color:#fbbf24">${window.segmentEngine.formatCompositeKey(d.compositeKey)}</div>
+                    <div style="border-top:1px solid #555; padding-top:6px;">
+                        <div class="d-flex justify-content-between mb-1"><span style="opacity:0.8">Visitors:</span> <span class="fw-bold">${d.visitors.toLocaleString()}</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span style="opacity:0.8">Elasticity:</span> <span class="fw-bold">${d.elasticity.toFixed(2)}</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span style="opacity:0.8">Return Rate:</span> <span class="fw-bold">${(d.return_rate * 100).toFixed(1)}%</span></div>
+                        <div class="d-flex justify-content-between"><span style="opacity:0.8">Rev/User:</span> <span class="fw-bold">$${d.revenue_metric.toFixed(2)}</span></div>
+                    </div>
                 `);
         })
-        .on('mousemove', function(event) {
+        .on('mousemove', function (event) {
             const containerNode = container.node();
             const containerRect = containerNode.getBoundingClientRect();
             const x = event.clientX - containerRect.left;
             const y = event.clientY - containerRect.top;
-
-            tooltip.style('left', x + 10 + 'px')
+            tooltip.style('left', x + 15 + 'px')
                 .style('top', y - 20 + 'px');
         })
-        .on('mouseleave', function() {
-            d3.select(this).attr('opacity', 0.7).attr('stroke-width', 1);
+        .on('mouseleave', function () {
+            d3.select(this)
+                .attr('opacity', 0.75)
+                .attr('stroke-width', 1.5)
+                .attr('stroke', '#fff');
             tooltip.style('display', 'none');
         });
 
-    // Legend
+    // LEGEND
+    const legendWidth = 160;
+    const legendHeight = 240;
+    const legendX = width + 40;
+    const legendY = 20;
+
+    // Legend Background Card
+    svg.append('rect')
+        .attr('x', legendX)
+        .attr('y', legendY)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .attr('fill', '#ffffff')
+        .attr('stroke', '#cbd5e1')
+        .attr('stroke-width', 1)
+        .attr('rx', 8)
+        .attr('filter', 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))');
+
     const legend = svg.append('g')
-        .attr('transform', `translate(${width + 20}, 0)`);
+        .attr('transform', `translate(${legendX + 20}, ${legendY + 25})`);
 
     legend.append('text')
         .attr('x', 0)
         .attr('y', 0)
-        .attr('font-weight', 'bold')
-        .attr('font-size', '12px')
+        .attr('font-weight', '800')
+        .attr('font-size', '14px')
+        .attr('fill', '#0f172a')
         .text('Legend');
+
+    // Horizontal separator line
+    legend.append('line')
+        .attr('x1', 0)
+        .attr('y1', 10)
+        .attr('x2', 120)
+        .attr('y2', 10)
+        .attr('stroke', '#e2e8f0')
+        .attr('stroke-width', 1);
 
     // Size legend
     legend.append('text')
         .attr('x', 0)
-        .attr('y', 25)
-        .attr('font-size', '10px')
-        .text('Size: ARPV');
+        .attr('y', 35)
+        .attr('font-size', '12px')
+        .attr('font-weight', '700')
+        .attr('fill', '#334155')
+        .text('Bubble Size: Rev/User');
 
-    // Color legend
     legend.append('text')
         .attr('x', 0)
-        .attr('y', 80)
-        .attr('font-size', '10px')
+        .attr('y', 50)
+        .attr('font-size', '11px')
+        .attr('fill', '#64748b')
+        .text('(Larger = Higher Spend)');
+
+    // Color legend
+    const colorY = 90;
+    legend.append('text')
+        .attr('x', 0)
+        .attr('y', colorY)
+        .attr('font-size', '12px')
+        .attr('font-weight', '700')
+        .attr('fill', '#334155')
         .text('Color: Return Rate');
 
+    // High
     legend.append('circle')
-        .attr('cx', 10)
-        .attr('cy', 95)
-        .attr('r', 5)
-        .attr('fill', '#22c55e');
+        .attr('cx', 8)
+        .attr('cy', colorY + 25)
+        .attr('r', 7)
+        .attr('fill', '#16a34a') // Vibrant Green
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5);
     legend.append('text')
-        .attr('x', 20)
-        .attr('y', 98)
-        .attr('font-size', '9px')
-        .text('Low');
+        .attr('x', 25)
+        .attr('y', colorY + 29)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#334155')
+        .text('> 70% (High)');
 
+    // Medium
     legend.append('circle')
-        .attr('cx', 10)
-        .attr('cy', 110)
-        .attr('r', 5)
-        .attr('fill', '#ef4444');
+        .attr('cx', 8)
+        .attr('cy', colorY + 50)
+        .attr('r', 7)
+        .attr('fill', '#f97316') // Vibrant Orange
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5);
     legend.append('text')
-        .attr('x', 20)
-        .attr('y', 113)
-        .attr('font-size', '9px')
-        .text('High');
+        .attr('x', 25)
+        .attr('y', colorY + 54)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#334155')
+        .text('40-70% (Med)');
 
-    // Title
-    svg.append('text')
-        .attr('x', width / 2)
-        .attr('y', -20)
-        .attr('text-anchor', 'middle')
-        .attr('font-weight', 'bold')
-        .attr('font-size', '14px')
-        .text(`Segment Analysis - ${tier.replace('_', ' ').toUpperCase()}`);
+    // Low
+    legend.append('circle')
+        .attr('cx', 8)
+        .attr('cy', colorY + 75)
+        .attr('r', 7)
+        .attr('fill', '#dc2626') // Vibrant Red
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5);
+    legend.append('text')
+        .attr('x', 25)
+        .attr('y', colorY + 79)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#334155')
+        .text('< 40% (Low)');
+
+    // Export Button (Optional, can be added if needed)
 }
+
 
 /**
  * Export SVG to file
