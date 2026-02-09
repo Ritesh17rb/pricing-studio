@@ -78,14 +78,14 @@ export async function simulateScenario(scenario, options = {}) {
 
     // Forecast return rate (inverse of churn)
     const returnRateForecast = await forecastChurn(
-      scenario.config.tier,
+      baselineTier,
       priceChangePct,
       baseline.returnRate
     );
 
     // Forecast new visits (acquisition)
     const newVisitsForecast = await forecastAcquisition(
-      scenario.config.tier,
+      baselineTier,
       priceChangePct,
       baseline.newVisitors
     );
@@ -141,6 +141,8 @@ export async function simulateScenario(scenario, options = {}) {
       12
     );
 
+    const migrationMatrix = await buildMigrationMatrix(scenario, baselineTier, priceChangePct);
+
     // Compile results
     const result = {
       scenario_id: scenario.id,
@@ -193,6 +195,10 @@ export async function simulateScenario(scenario, options = {}) {
 
       constraints_met: checkConstraints(scenario)
     };
+
+    if (migrationMatrix) {
+      result.migration_matrix = migrationMatrix;
+    }
 
     return result;
 
@@ -494,6 +500,151 @@ function calculateRevenueImpact(forecastedVisitors, newPrice, baselineVisitors, 
     change,
     percentChange
   };
+}
+
+function getLatestTierSnapshots(dailyData) {
+  const latestByTier = {};
+  dailyData.forEach(row => {
+    const tier = row.membership_tier;
+    if (!tier) return;
+    if (!latestByTier[tier] || row.date > latestByTier[tier].date) {
+      latestByTier[tier] = row;
+    }
+  });
+  return latestByTier;
+}
+
+function getAdjacentTier(tiers, tier, direction) {
+  const idx = tiers.indexOf(tier);
+  if (idx === -1) return null;
+  const nextIdx = idx + direction;
+  if (nextIdx < 0 || nextIdx >= tiers.length) return null;
+  return tiers[nextIdx];
+}
+
+async function getTierMigrationElasticity(tier) {
+  try {
+    if (typeof window !== 'undefined' && window.segmentEngine?.isDataLoaded()) {
+      const segments = window.segmentEngine.getSegmentsForTier(tier);
+      if (!segments || segments.length === 0) return 0.6;
+      let total = 0;
+      let weighted = 0;
+      for (const seg of segments) {
+        const weight = parseFloat(seg.visitor_count || 0);
+        if (!weight) continue;
+        const elasticity = window.segmentEngine.getElasticity(tier, seg.compositeKey, 'monetization');
+        if (typeof elasticity === 'number') {
+          weighted += Math.max(0, elasticity) * weight;
+          total += weight;
+        }
+      }
+      if (total > 0) return weighted / total;
+    }
+  } catch (error) {
+    console.warn('Migration elasticity lookup failed, using fallback', error);
+  }
+  return 0.6;
+}
+
+async function buildMigrationMatrix(scenario, baselineTier, priceChangePct) {
+  try {
+    const dailyData = await getDailyData('all');
+    if (!dailyData || dailyData.length === 0) return null;
+
+    const latestByTier = getLatestTierSnapshots(dailyData);
+    const currentPrices = await getCurrentPrices();
+    const priceByTier = {};
+
+    Object.entries(currentPrices || {}).forEach(([tier, info]) => {
+      priceByTier[tier] = info.list_price || info.avg_paid_price || info.price || 0;
+    });
+
+    const extraTierPrices = {};
+    if (scenario?.config?.new_tier && !priceByTier[scenario.config.new_tier]) {
+      extraTierPrices[scenario.config.new_tier] =
+        scenario.config.tier_price ||
+        scenario.config.new_price ||
+        scenario.config.new_bundle_price ||
+        scenario.config.current_price ||
+        0;
+    }
+
+    if (scenario?.config?.new_bundle_price && !priceByTier.bundle) {
+      extraTierPrices.bundle = scenario.config.new_bundle_price;
+    }
+
+    const tiers = Object.keys({ ...priceByTier, ...extraTierPrices })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const priceA = priceByTier[a] ?? extraTierPrices[a] ?? 0;
+        const priceB = priceByTier[b] ?? extraTierPrices[b] ?? 0;
+        return priceA - priceB;
+      });
+
+    const flows = {};
+    tiers.forEach(from => {
+      flows[from] = {};
+      tiers.forEach(to => {
+        if (to !== from) flows[from][to] = 0;
+      });
+      flows[from].cancel = 0;
+    });
+
+    const impact = scenario?.impact_summary || {};
+    let usedImpact = false;
+
+    if (impact.bundle_adoption_pct && tiers.includes('bundle')) {
+      if (flows.premium_pass) {
+        flows.premium_pass.bundle = (impact.bundle_adoption_pct || 0) / 100;
+        usedImpact = true;
+      }
+      if (impact.upgrade_from_standard_pct && flows.standard_pass) {
+        flows.standard_pass.bundle = (impact.upgrade_from_standard_pct || 0) / 100;
+        usedImpact = true;
+      }
+    }
+
+    if ((impact.standard_cannibalization_pct || impact.new_tier_adoption_pct) && scenario?.config?.new_tier) {
+      const pct = (impact.standard_cannibalization_pct ?? impact.new_tier_adoption_pct ?? 0) / 100;
+      const sourceTier = baselineTier || 'standard_pass';
+      if (flows[sourceTier]) {
+        flows[sourceTier][scenario.config.new_tier] = pct;
+        usedImpact = true;
+      }
+    }
+
+    if (!usedImpact && priceChangePct !== 0) {
+      const targetTier = scenario?.config?.new_tier ? baselineTier : scenario?.config?.tier;
+      if (targetTier && flows[targetTier]) {
+        const migrationElasticity = await getTierMigrationElasticity(targetTier);
+        const migrationRate = Math.min(0.25, Math.abs(priceChangePct) * migrationElasticity);
+
+        if (priceChangePct > 0) {
+          const lowerTier = getAdjacentTier(tiers, targetTier, -1);
+          if (lowerTier) {
+            flows[targetTier][lowerTier] = migrationRate * 0.7;
+          }
+          flows[targetTier].cancel = migrationRate * 0.3;
+        } else if (priceChangePct < 0) {
+          const lowerTier = getAdjacentTier(tiers, targetTier, -1);
+          if (lowerTier && flows[lowerTier]) {
+            flows[lowerTier][targetTier] = migrationRate * 0.8;
+          }
+        }
+      }
+    }
+
+    return {
+      tiers,
+      flows,
+      baseline: Object.fromEntries(
+        tiers.map(tier => [tier, latestByTier[tier]?.daily_visitors || 0])
+      )
+    };
+  } catch (error) {
+    console.warn('Failed to build migration matrix:', error);
+    return null;
+  }
 }
 
 /**
@@ -1231,6 +1382,7 @@ export async function simulateScenarioWithPyodide(scenario, options = {}) {
       baseline: baseline,
       forecasted: forecasted,
       delta: delta,
+      migration_matrix: await buildMigrationMatrix(scenario, baselineTier, pythonScenario.price_change_pct / 100),
 
       // Python model outputs
       python_models: {

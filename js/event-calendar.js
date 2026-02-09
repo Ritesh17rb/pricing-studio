@@ -237,7 +237,7 @@ function renderEventTable() {
   const filteredEvents = filterEvents();
 
   if (filteredEvents.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No events match the current filters</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No events match the current filters</td></tr>';
     return;
   }
 
@@ -245,22 +245,14 @@ function renderEventTable() {
   filteredEvents.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(event => {
     const date = new Date(event.date);
     const dateStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    const badge = getEventBadge(event.event_type);
-    const priceChange = event.price_before && event.price_after && event.price_before !== event.price_after
-      ? `${formatCurrency(event.price_before)} → ${formatCurrency(event.price_after)}`
-      : '-';
-    const promo = event.promo_discount_pct > 0
-      ? `${event.promo_discount_pct}% off`
-      : '-';
+    const eventTypeDisplay = formatEventType(event.event_type);
+    const impactBadge = formatImpactLevel(event.impact_level);
 
     html += `
       <tr>
         <td class="text-nowrap">${dateStr}</td>
-        <td><span class="badge ${badge.class}">${badge.text}</span></td>
-        <td>${formatTier(event.tier)}</td>
-        <td class="text-nowrap">${priceChange}</td>
-        <td>${promo}</td>
-        <td class="small">${event.notes || '-'}</td>
+        <td><strong>${event.event_name}</strong><br><span class="badge bg-primary small">${eventTypeDisplay}</span></td>
+        <td><span class="badge ${impactBadge.class}">${impactBadge.text}</span></td>
       </tr>
     `;
   });
@@ -297,7 +289,7 @@ function renderPromoCards() {
           <div class="card-header bg-${statusClass} text-white">
             <div class="d-flex justify-content-between align-items-center">
               <h6 class="mb-0">${promo.campaign_name}</h6>
-              <span class="badge text-dark">${status}</span>
+              <span class="badge bg-light text-body">${status}</span>
             </div>
           </div>
           <div class="card-body">
@@ -323,7 +315,7 @@ function renderPromoCards() {
             <div class="mb-2">
               <strong>Roll-off:</strong> ${formatDate(promo.roll_off_date)}
               ${promo.churn_spike_expected ?
-                `<span class="badge bg-warning text-dark ms-1" title="Expected churn spike at ${promo.churn_spike_lag_weeks} weeks">
+                `<span class="badge bg-warning text-body ms-1" title="Expected churn spike at ${promo.churn_spike_lag_weeks} weeks">
                   <i class="bi bi-exclamation-triangle"></i> Churn Risk
                 </span>` : ''}
             </div>
@@ -439,15 +431,40 @@ function filterEvents() {
 }
 
 /**
- * Get event badge configuration
+ * Format event type for display
+ */
+function formatEventType(eventType) {
+  const typeMap = {
+    'holiday': 'Holiday',
+    'special_event': 'Special Event',
+    'school_break': 'School Break',
+    'weather': 'Weather'
+  };
+  return typeMap[eventType] || eventType;
+}
+
+/**
+ * Format impact level badge
+ */
+function formatImpactLevel(impactLevel) {
+  const impactMap = {
+    'high': { text: 'High Impact', class: 'bg-danger' },
+    'medium': { text: 'Medium Impact', class: 'bg-warning text-body' },
+    'low': { text: 'Low Impact', class: 'bg-info' }
+  };
+  return impactMap[impactLevel] || { text: impactLevel, class: 'bg-secondary' };
+}
+
+/**
+ * Get event badge configuration (legacy, still used by timeline)
  */
 function getEventBadge(eventType) {
   const badges = {
     'Price Change': { text: 'Price Change', class: 'bg-success' },
     'Promo Start': { text: 'Promo Start', class: 'bg-info' },
     'Promo End': { text: 'Promo End', class: 'bg-secondary' },
-    'Promo Roll-off': { text: 'Roll-off', class: 'bg-warning text-dark' },
-    'Tentpole': { text: 'Tentpole', class: 'bg-warning text-dark' }
+    'Promo Roll-off': { text: 'Roll-off', class: 'bg-warning text-body' },
+    'Tentpole': { text: 'Tentpole', class: 'bg-warning text-body' }
   };
   return badges[eventType] || { text: eventType, class: 'bg-secondary' };
 }
@@ -459,7 +476,7 @@ function getWindowBadge(status) {
   const badges = {
     'clean': 'bg-success',
     'test': 'bg-info',
-    'confounded': 'bg-warning text-dark'
+    'confounded': 'bg-warning text-body'
   };
   return badges[status] || 'bg-secondary';
 }

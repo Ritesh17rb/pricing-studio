@@ -569,13 +569,27 @@ function updateMigrationModel() {
   document.getElementById('mig-gap-change').textContent = (gapChange >= 0 ? '+' : '') + gapChange.toFixed(1) + '%';
 
   // Get cohort-specific migration parameters
-  const selectedCohort = document.getElementById('mig-cohort-select')?.value || 'baseline';
-  const cohort = (cohortData && cohortData[selectedCohort]) || cohortData?.baseline || {};
+  const selectedCohortValue = document.getElementById('mig-cohort-select')?.value || 'baseline';
+
+  // Map price sensitivity dropdown values to actual cohort names in cohort_coefficients.json
+  const cohortMapping = {
+    'baseline': 'value_conscious',       // Moderate baseline (elasticity 7.5)
+    'budget': 'deal_hunter',              // Highly price-sensitive (elasticity 15.0, asymmetry 4.5)
+    'value': 'value_conscious',           // Want best value (elasticity 7.5, asymmetry 2.2)
+    'standard': 'content_driven',         // Moderate sensitivity (elasticity 2.4, asymmetry 2.0)
+    'premium': 'ultra_loyal',             // Less sensitive (elasticity 0.4, asymmetry 1.8)
+    'luxury': 'ultra_loyal'               // Price-insensitive (elasticity 0.4, asymmetry 1.8)
+  };
+
+  const actualCohortName = cohortMapping[selectedCohortValue] || 'value_conscious';
+  const cohort = (cohortData && cohortData[actualCohortName]) || cohortData?.value_conscious || {};
 
   // Migration asymmetry factor: how much more willing to migrate based on cohort
-  // Deal Hunter: 4.5 (very asymmetric - extreme reactions)
+  // Deal Hunter (budget): 4.5 (very asymmetric - extreme reactions)
   // Tier Flexible: 3.8 (high asymmetry)
-  // Baseline: 2.2 (moderate)
+  // Value Conscious (baseline/value): 2.2 (moderate)
+  // Content Driven (standard): 2.0 (moderate)
+  // Ultra Loyal (premium/luxury): 1.8 (low asymmetry - stable)
   const asymmetryFactor = cohort.migration_asymmetry_factor || 2.2;
 
   // Base migration willingness (higher = more willing to switch tiers)
@@ -583,10 +597,11 @@ function updateMigrationModel() {
   const downgradeWillingness = cohort.migration_downgrade || 1.2;
 
   console.log('🎯 Cohort Migration Profile:', {
-    cohort: selectedCohort,
-    asymmetryFactor,
-    upgradeWillingness,
-    downgradeWillingness
+    selectedValue: selectedCohortValue,
+    mappedCohort: actualCohortName,
+    asymmetryFactor: asymmetryFactor.toFixed(2),
+    upgradeWillingness: upgradeWillingness.toFixed(2),
+    downgradeWillingness: downgradeWillingness.toFixed(2)
   });
 
   // Calculate migration probabilities based on BOTH gap size AND individual price changes
@@ -718,7 +733,8 @@ function updateMigrationModel() {
   cancelFreePct = Math.max(migrationParams.baselineCancelFree, Math.min(35, cancelFreePct));
 
   console.log('💀 Churn Calculation:', {
-    cohort: selectedCohort,
+    selectedValue: selectedCohortValue,
+    mappedCohort: actualCohortName,
     churnElasticity: churnElasticity.toFixed(1),
     standardPriceChange: standardPriceChange.toFixed(1) + '%',
     premiumPriceChange: premiumPriceChange.toFixed(1) + '%',

@@ -1295,15 +1295,62 @@ async function saveEditedScenario() {
   showAlert('Scenario updated! Click "Simulate" to see the new results.', 'info');
 }
 
-// Initialize Bootstrap popovers for ML methodology
+function buildKpiSummaryCard() {
+  const kpiCards = document.querySelectorAll('#kpi-cards .kpi-card');
+  const items = [...kpiCards].map(card => {
+    const labelEl = card.querySelector('.text-muted');
+    const valueEl = card.querySelector('.fs-2');
+    const changeEl = card.querySelector('.small');
+    const label = labelEl?.childNodes?.[0]?.textContent?.trim() || labelEl?.textContent?.trim() || '';
+    const value = valueEl?.textContent?.trim() || '--';
+    const changeText = changeEl?.textContent?.trim() || '--';
+    const changeClass = changeEl?.classList?.contains('text-success')
+      ? 'text-success'
+      : (changeEl?.classList?.contains('text-danger') ? 'text-danger' : 'text-muted');
+
+    return `
+      <div class="col-6">
+        <div class="small text-muted text-uppercase">${label}</div>
+        <div class="fw-semibold">${value}</div>
+        <div class="small ${changeClass}">${changeText}</div>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="card kpi-popover-card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="small text-uppercase text-muted mb-2">Key Performance Metrics (Latest Week)</div>
+        <div class="row g-2">
+          ${items.join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Initialize Bootstrap popovers for ML methodology and KPI hover cards
 function initializePopovers() {
   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
   const popoverList = [...popoverTriggerList].map(popoverTriggerEl => {
-    return new bootstrap.Popover(popoverTriggerEl, {
+    const trigger = popoverTriggerEl.getAttribute('data-bs-trigger') || 'focus';
+    const isKpiSummary = popoverTriggerEl.dataset.kpiPopover === 'summary';
+    const placement = popoverTriggerEl.getAttribute('data-bs-placement') || 'top';
+
+    // Build config object conditionally to avoid undefined values
+    const config = {
       html: true,
       sanitize: false,
-      trigger: 'focus'
-    });
+      trigger,
+      placement
+    };
+
+    // Only add content if it's a KPI summary popover
+    if (isKpiSummary) {
+      config.content = buildKpiSummaryCard;
+    }
+
+    return new bootstrap.Popover(popoverTriggerEl, config);
   });
 }
 
@@ -2896,6 +2943,7 @@ async function renderMigrationMatrix(result) {
   const tableBody = document.querySelector('#migration-matrix-table tbody');
   const tableCard = tableBody?.closest('.card');
   const tableHeader = document.querySelector('#migration-matrix-table thead');
+  const detailSection = document.getElementById('migration-results-detail');
 
   if (!tableBody) return;
 
@@ -2903,11 +2951,29 @@ async function renderMigrationMatrix(result) {
   if (tableCard) {
     tableCard.style.display = 'block';
   }
+  if (detailSection) {
+    detailSection.style.display = 'block';
+  }
 
   try {
+    if (result?.migration_matrix?.tiers?.length) {
+      renderTierMigrationMatrix(tableHeader, tableBody, result.migration_matrix);
+      return;
+    }
+
     // Use Python model migration predictions
     if (!result.python_models || !result.python_models.migration) {
       console.log('⚠️ No migration predictions available');
+      tableHeader.innerHTML = `
+        <tr>
+          <th>Tier Transition Matrix (Δ vs baseline)</th>
+        </tr>
+      `;
+      tableBody.innerHTML = `
+        <tr>
+          <td class="text-muted">Migration model not available yet. Run Step 8 after Python models finish loading.</td>
+        </tr>
+      `;
       return;
     }
 
@@ -2930,6 +2996,75 @@ async function renderMigrationMatrix(result) {
     console.error('Error rendering migration matrix:', error);
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading migration data</td></tr>';
   }
+}
+
+function getTierLabel(tier) {
+  const labels = {
+    economy_pass: 'Economy Pass',
+    standard_pass: 'Standard Pass',
+    premium_pass: 'Premium Pass',
+    vip_pass: 'VIP Pass',
+    bundle: 'Bundle Pass',
+    ad_supported: 'Ad-Lite',
+    ad_free: 'Ad-Free'
+  };
+  if (labels[tier]) return labels[tier];
+  return tier.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderTierMigrationMatrix(tableHeader, tableBody, migrationMatrix) {
+  const tiers = migrationMatrix.tiers || [];
+  const flows = migrationMatrix.flows || {};
+
+  tableHeader.innerHTML = `
+    <tr>
+      <th>Current Tier</th>
+      ${tiers.map(tier => `<th>→ ${getTierLabel(tier)}</th>`).join('')}
+      <th>Cancel</th>
+      <th>Net Change</th>
+    </tr>
+  `;
+
+  const formatPct = (value) => {
+    if (!value || Math.abs(value) < 0.0001) return '—';
+    const pct = (value * 100);
+    return `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  };
+
+  const classFor = (value, isCancel = false) => {
+    if (!value || Math.abs(value) < 0.0001) return 'text-muted';
+    if (isCancel) return 'text-danger';
+    return value >= 0 ? 'text-success' : 'text-danger';
+  };
+
+  tableBody.innerHTML = tiers.map(fromTier => {
+    const rowFlows = flows[fromTier] || {};
+    const outflow = tiers.reduce((sum, toTier) => {
+      if (toTier === fromTier) return sum;
+      return sum + (rowFlows[toTier] || 0);
+    }, 0);
+    const cancel = rowFlows.cancel || 0;
+    const inflow = tiers.reduce((sum, otherTier) => {
+      if (otherTier === fromTier) return sum;
+      return sum + ((flows[otherTier] || {})[fromTier] || 0);
+    }, 0);
+    const net = inflow - outflow - cancel;
+
+    return `
+      <tr>
+        <td><strong>${getTierLabel(fromTier)}</strong></td>
+        ${tiers.map(toTier => {
+          if (toTier === fromTier) {
+            return '<td class="text-muted">—</td>';
+          }
+          const value = rowFlows[toTier] || 0;
+          return `<td class="${classFor(value)}">${formatPct(value)}</td>`;
+        }).join('')}
+        <td class="${classFor(cancel, true)}">${formatPct(cancel)}</td>
+        <td class="${classFor(net)}"><strong>${formatPct(net)}</strong></td>
+      </tr>
+    `;
+  }).join('');
 }
 
 /**
@@ -3172,7 +3307,7 @@ function displayTop3Scenarios(top3) {
 
   let html = '';
   top3.forEach((scenario, index) => {
-    const rankBadge = index === 0 ? 'bg-warning' : index === 1 ? 'bg-secondary' : 'text-dark';
+    const rankBadge = index === 0 ? 'bg-warning' : index === 1 ? 'bg-secondary' : 'bg-info';
     const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
     const riskBadge = scenario.risk_level === 'Low' ? 'bg-success' :
                       scenario.risk_level === 'Med' ? 'bg-warning' :

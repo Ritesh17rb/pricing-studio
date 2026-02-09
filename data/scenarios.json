@@ -108,14 +108,19 @@
     "category": "new_tier",
     "model_type": "migration",
     "config": {
+      "tier": "economy_pass",
       "new_tier": "economy_pass",
+      "current_price": 79,
+      "new_price": 49,
       "tier_price": 49,
+      "price_change_pct": -38,
       "features": [
         "limited_attractions",
         "weekday_only",
         "no_fastpass"
       ],
       "effective_date": "2026-01-15",
+      "duration_months": 12,
       "cannibalization_tiers": [
         "standard_pass"
       ]
@@ -181,6 +186,8 @@
     "config": {
       "tier": "premium_pass",
       "current_price": 139,
+      "new_price": 179,
+      "price_change_pct": 28.8,
       "new_bundle_price": 179,
       "includes": [
         "admission",

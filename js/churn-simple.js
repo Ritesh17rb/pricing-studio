@@ -647,36 +647,11 @@ function setupChurnInteractivity() {
     });
   }
 
-  // Cohort selection change
-  if (cohortSelect && cohortData) {
+  // Cohort selection change - filters to show specific party composition behavior
+  if (cohortSelect) {
     cohortSelect.addEventListener('change', () => {
       const selectedCohort = cohortSelect.value;
-      console.log('🔄 Switching to churn cohort:', selectedCohort);
-
-      if (cohortData[selectedCohort]) {
-        const cohort = cohortData[selectedCohort];
-
-        // Update time-lag distribution from cohort profile
-        if (cohort.time_lag_distribution) {
-          const dist = cohort.time_lag_distribution;
-          churnTimeLag = {
-            '0_4_weeks': dist['0_4_weeks'] || 0.15,
-            '4_8_weeks': dist['4_8_weeks'] || 0.25,
-            '8_12_weeks': dist['8_12_weeks'] || 0.30,
-            '12_plus': (dist['12_16_weeks'] || 0.20) + (dist['16_20_weeks'] || 0.10)
-          };
-          console.log(`  ✓ Curve shape: [${Object.values(dist).map(v => (v*100).toFixed(0)+'%').join(', ')}]`);
-        }
-
-        // Update churn elasticity from cohort
-        Object.keys(churnParams).forEach(tier => {
-          churnParams[tier].churn_elasticity = cohort.churn_elasticity;
-        });
-
-        console.log(`  ✓ Churn elasticity: ${cohort.churn_elasticity.toFixed(2)}`);
-      }
-
-      // Force update to show new curve shape
+      console.log('🔄 Filtering to churn cohort:', selectedCohort);
       updateChurnModel(currentTier);
     });
   }
@@ -687,6 +662,8 @@ function setupChurnInteractivity() {
  */
 function updateChurnModel(currentTier = 'standard_pass') {
   const priceSlider = document.getElementById('churn-price-slider');
+  const cohortSelect = document.getElementById('churn-cohort-select');
+
   if (!priceSlider || !churnParams) {
     console.warn('⚠️ updateChurnModel early return:', { priceSlider: !!priceSlider, churnParams: !!churnParams });
     return;
@@ -698,16 +675,48 @@ function updateChurnModel(currentTier = 'standard_pass') {
     return;
   }
 
+  // Check if a specific cohort is selected
+  const selectedCohortId = cohortSelect ? cohortSelect.value : 'baseline';
+  let activeElasticity = tierParams.churn_elasticity;
+  let activeBaselineChurn = tierParams.baseline_churn;
+  let activeTimeLag = churnTimeLag;
+
+  // If a specific cohort is selected, use that cohort's data
+  if (selectedCohortId !== 'baseline' && tierParams.cohorts) {
+    const selectedCohort = tierParams.cohorts.find(c => c.id === selectedCohortId);
+
+    if (selectedCohort) {
+      activeElasticity = selectedCohort.elasticity;
+      console.log(`✓ Using cohort "${selectedCohort.name}" elasticity: ${activeElasticity.toFixed(3)}`);
+
+      // Optionally use cohort-specific time-lag if available from cohortData
+      if (cohortData && cohortData[selectedCohortId] && cohortData[selectedCohortId].time_lag_distribution) {
+        const dist = cohortData[selectedCohortId].time_lag_distribution;
+        activeTimeLag = {
+          '0_4_weeks': dist['0_4_weeks'] || 0.15,
+          '4_8_weeks': dist['4_8_weeks'] || 0.25,
+          '8_12_weeks': dist['8_12_weeks'] || 0.30,
+          '12_plus': (dist['12_16_weeks'] || 0.20) + (dist['16_20_weeks'] || 0.10)
+        };
+        console.log(`✓ Using cohort-specific time-lag distribution`);
+      }
+    } else {
+      console.warn(`⚠️ Cohort "${selectedCohortId}" not found in tier data, using baseline`);
+    }
+  }
+
   const priceIncrease = parseFloat(priceSlider.value);
   const currentTierPrice = tierParams.price;
   const priceChangePct = (priceIncrease / currentTierPrice) * 100;
 
   console.log('📊 Churn Model Update:', {
+    tier: currentTier,
+    cohort: selectedCohortId,
     priceIncrease,
     currentTierPrice,
     priceChangePct: priceChangePct.toFixed(2) + '%',
-    baseline_churn: tierParams.baseline_churn,
-    churn_elasticity: tierParams.churn_elasticity,
+    baseline_churn: activeBaselineChurn,
+    churn_elasticity: activeElasticity,
     chartExists: !!churnChartSimple
   });
 
@@ -717,20 +726,20 @@ function updateChurnModel(currentTier = 'standard_pass') {
 
   // Update baseline churn rate display
   const baselineRateEl = document.getElementById('churn-baseline-rate');
-  if (baselineRateEl && tierParams) {
-    baselineRateEl.textContent = tierParams.baseline_churn.toFixed(1) + '%';
+  if (baselineRateEl) {
+    baselineRateEl.textContent = activeBaselineChurn.toFixed(1) + '%';
   }
 
-  // Calculate total churn impact using actual churn elasticity
+  // Calculate total churn impact using active churn elasticity (cohort-specific or baseline)
   // Formula: churn_change = baseline_churn × churn_elasticity × (price_change_pct / 100)
-  const totalChurnImpact = tierParams.baseline_churn * tierParams.churn_elasticity * (priceChangePct / 100);
+  const totalChurnImpact = activeBaselineChurn * activeElasticity * (priceChangePct / 100);
 
-  // Distribute impact across time horizons using time lag distribution
+  // Distribute impact across time horizons using active time lag distribution
   const impacts = {
-    '0_4': totalChurnImpact * churnTimeLag['0_4_weeks'],
-    '4_8': totalChurnImpact * churnTimeLag['4_8_weeks'],
-    '8_12': totalChurnImpact * churnTimeLag['8_12_weeks'],
-    '12plus': totalChurnImpact * churnTimeLag['12_plus']
+    '0_4': totalChurnImpact * activeTimeLag['0_4_weeks'],
+    '4_8': totalChurnImpact * activeTimeLag['4_8_weeks'],
+    '8_12': totalChurnImpact * activeTimeLag['8_12_weeks'],
+    '12plus': totalChurnImpact * activeTimeLag['12_plus']
   };
 
   // Update impact displays
@@ -752,7 +761,7 @@ function updateChurnModel(currentTier = 'standard_pass') {
 
   // Update churn chart
   if (churnChartSimple) {
-    const tierBaseline = tierParams.baseline_churn;
+    const tierBaseline = activeBaselineChurn;
     const projectedData = [
       tierBaseline,
       tierBaseline + impacts['0_4'],
@@ -793,7 +802,7 @@ function updateChurnModel(currentTier = 'standard_pass') {
 
   // Update survival curve chart with revenue impact
   if (survivalCurveChart) {
-    const tierBaseline = tierParams.baseline_churn;
+    const tierBaseline = activeBaselineChurn;
 
     // Calculate actual churn rates at each period from the churn chart data
     const churnRates = [

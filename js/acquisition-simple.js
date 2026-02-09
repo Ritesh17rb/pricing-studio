@@ -397,29 +397,11 @@ function setupAcquisitionInteractivity() {
     });
   }
 
-  // Cohort selection change (optional feature - applies cohort multipliers)
-  if (cohortSelect && cohortData) {
+  // Cohort selection change - filters chart to show only selected cohort
+  if (cohortSelect) {
     cohortSelect.addEventListener('change', () => {
       const selectedCohort = cohortSelect.value;
-      console.log('🔄 Switching to acquisition cohort:', selectedCohort);
-
-      if (cohortData[selectedCohort]) {
-        const cohort = cohortData[selectedCohort];
-        const tier = tierSelect.value;
-
-        // Update base elasticity from cohort profile
-        if (acquisitionParams[tier]) {
-          acquisitionParams[tier].base_elasticity = cohort.acquisition_elasticity;
-          // Update all segment elasticities proportionally
-          if (acquisitionParams[tier].cohorts) {
-            acquisitionParams[tier].cohorts.forEach(c => {
-              c.elasticity = cohort.acquisition_elasticity;
-            });
-          }
-          console.log(`  ✓ Applied cohort "${selectedCohort}" elasticity: ${cohort.acquisition_elasticity.toFixed(2)}`);
-        }
-      }
-
+      console.log('🔄 Filtering to acquisition cohort:', selectedCohort);
       updateAcquisitionModel();
     });
   }
@@ -494,17 +476,46 @@ function updateAcquisitionModel() {
   // Update dynamic elasticity explanation
   updateElasticityExplanation(elasticity);
 
-  // Update segment table with actual cohorts
-  if (params.cohorts) {
-    updateSegmentTable(params.cohorts, priceChangePct);
+  // Get filtered cohorts based on selection
+  const cohortSelect = document.getElementById('acq-cohort-select');
+  const selectedCohortId = cohortSelect ? cohortSelect.value : 'baseline';
+  let displayCohorts = params.cohorts;
+
+  if (selectedCohortId !== 'baseline' && params.cohorts) {
+    // Filter to show only selected cohort
+    const filtered = params.cohorts.filter(c => c.id === selectedCohortId);
+    if (filtered.length > 0) {
+      displayCohorts = filtered;
+    }
+  }
+
+  // Update segment table with filtered cohorts
+  if (displayCohorts) {
+    updateSegmentTable(displayCohorts, priceChangePct);
   }
 
   // Update chart with actual cohorts
   if (acquisitionChartSimple && params.cohorts) {
-    const cohorts = params.cohorts;
+    const cohortSelect = document.getElementById('acq-cohort-select');
+    const selectedCohortId = cohortSelect ? cohortSelect.value : 'baseline';
+
+    // Filter cohorts based on selection
+    let filteredCohorts = params.cohorts;
+    if (selectedCohortId !== 'baseline') {
+      // Show only the selected cohort
+      filteredCohorts = params.cohorts.filter(c => c.id === selectedCohortId);
+      if (filteredCohorts.length === 0) {
+        console.warn('⚠️ Selected cohort not found:', selectedCohortId);
+        filteredCohorts = params.cohorts; // Fallback to all
+      } else {
+        console.log('✓ Filtered to cohort:', filteredCohorts[0].name);
+      }
+    }
+
+    const cohorts = filteredCohorts;
     const segments = params.segments;
 
-    // Build arrays dynamically from cohorts
+    // Build arrays dynamically from filtered cohorts
     const labels = cohorts.map(c => c.name);
     const baselineData = cohorts.map(c => c.size);
 
