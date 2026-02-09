@@ -93,6 +93,22 @@ async function loadMigrationParams() {
       crossElasticity: crossElasticityStandard
     };
 
+    // Expose state for AI Chat
+    window.migrationModel = {
+      getState: () => ({
+        params: migrationParams,
+        activeFilters: {
+          acquisition: document.getElementById('mig-segment-acq')?.value || 'all',
+          engagement: document.getElementById('mig-segment-eng')?.value || 'all',
+          monetization: document.getElementById('mig-segment-mon')?.value || 'all'
+        },
+        prices: {
+          standard: document.getElementById('mig-standard-slider')?.value,
+          premium: document.getElementById('mig-premium-slider')?.value
+        }
+      })
+    };
+
     console.log('✓ Migration parameters loaded from actual data:', migrationParams);
     return migrationParams;
   } catch (error) {
@@ -200,7 +216,7 @@ function createMigrationChartSimple() {
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + '%';
             }
           }
@@ -368,7 +384,7 @@ function updateSankeyDiagram(upgradeRate = null, downgradeRate = null, cancelLit
     .attr('stroke-width', d => Math.max(1, d.width))
     .attr('fill', 'none')
     .attr('opacity', 0.4)
-    .on('mouseover', function(_event, d) {
+    .on('mouseover', function (_event, d) {
       d3.select(this).attr('opacity', 0.7);
 
       // Calculate flow metrics
@@ -401,8 +417,8 @@ function updateSankeyDiagram(upgradeRate = null, downgradeRate = null, cancelLit
 
       // Build tooltip HTML
       const flowType = d.type === 'stay' ? 'Retention' :
-                       d.type === 'upgrade' ? 'Upgrade' :
-                       d.type === 'downgrade' ? 'Downgrade' : 'Churn';
+        d.type === 'upgrade' ? 'Upgrade' :
+          d.type === 'downgrade' ? 'Downgrade' : 'Churn';
 
       tooltip.html(`
         <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px;">
@@ -416,12 +432,12 @@ function updateSankeyDiagram(upgradeRate = null, downgradeRate = null, cancelLit
       `)
         .style('visibility', 'visible');
     })
-    .on('mousemove', function(event) {
+    .on('mousemove', function (event) {
       tooltip
         .style('top', (event.pageY - 10) + 'px')
         .style('left', (event.pageX + 15) + 'px');
     })
-    .on('mouseout', function() {
+    .on('mouseout', function () {
       d3.select(this).attr('opacity', 0.4);
       tooltip.style('visibility', 'hidden');
     });
@@ -454,7 +470,7 @@ function updateSankeyDiagram(upgradeRate = null, downgradeRate = null, cancelLit
     .attr('font-size', '12px')
     .attr('font-weight', '600')
     .attr('fill', document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#e5e5e5' : '#1e293b')
-    .each(function(d) {
+    .each(function (d) {
       const lines = d.name.split('\n');
       const text = d3.select(this);
       lines.forEach((line, i) => {
@@ -469,10 +485,17 @@ function updateSankeyDiagram(upgradeRate = null, downgradeRate = null, cancelLit
 /**
  * Setup slider interactivity and configure dynamic price ranges
  */
+/**
+ * Setup slider interactivity and configure dynamic price ranges
+ */
 function setupMigrationInteractivity() {
   const standardSlider = document.getElementById('mig-standard-slider');
   const premiumSlider = document.getElementById('mig-premium-slider');
-  const cohortSelect = document.getElementById('mig-cohort-select');
+
+  // New Filter Dropdowns
+  const segFreq = document.getElementById('mig-segment-acq');
+  const segParty = document.getElementById('mig-segment-eng');
+  const segSens = document.getElementById('mig-segment-mon');
 
   if (!standardSlider || !premiumSlider) {
     console.warn('Migration controls not found');
@@ -512,16 +535,60 @@ function setupMigrationInteractivity() {
   standardSlider.addEventListener('input', updateMigrationModel);
   premiumSlider.addEventListener('input', updateMigrationModel);
 
-  // Cohort selection change
-  if (cohortSelect && cohortData) {
-    cohortSelect.addEventListener('change', () => {
-      const selectedCohort = cohortSelect.value;
-      console.log('🔄 Switching to migration cohort:', selectedCohort);
+  // Segment Filter Changes
+  const onFilterChange = () => {
+    console.log('🔄 Migration segment filter changed, refreshing data...');
+    refreshMigrationData();
+  };
 
-      // Cohort-specific parameters are now read directly in updateMigrationModel()
-      updateMigrationModel();
-    });
+  if (segFreq) segFreq.addEventListener('change', onFilterChange);
+  if (segParty) segParty.addEventListener('change', onFilterChange);
+  if (segSens) segSens.addEventListener('change', onFilterChange);
+
+  // Initial refresh
+  refreshMigrationData();
+}
+
+/**
+ * Refresh migration data based on current filters
+ */
+async function refreshMigrationData() {
+  if (!window.segmentEngine || !migrationParams) return;
+
+  const filters = {
+    acquisition: document.getElementById('mig-segment-acq')?.value || 'all',
+    engagement: document.getElementById('mig-segment-eng')?.value || 'all',
+    monetization: document.getElementById('mig-segment-mon')?.value || 'all'
+  };
+
+  // Get filtered segments
+  const segments = window.segmentEngine.filterSegments(filters);
+
+  let standardSubs = 0;
+  let premiumSubs = 0;
+
+  segments.forEach(s => {
+    if (s.tier === 'standard_pass') standardSubs += parsIntSafe(s.visitor_count);
+    else if (s.tier === 'premium_pass') premiumSubs += parsIntSafe(s.visitor_count);
+  });
+
+  // Update migration population params
+  // Only update if we have data, otherwise fallback to baseline to avoid 0s
+  if (standardSubs + premiumSubs > 0) {
+    migrationParams.adLiteSubs = standardSubs;
+    migrationParams.adFreeSubs = premiumSubs;
+
+    const total = standardSubs + premiumSubs;
+    migrationParams.baselineLitePct = (standardSubs / total) * 100;
+    migrationParams.baselineFreePct = (premiumSubs / total) * 100;
   }
+
+  updateMigrationModel();
+}
+
+function parsIntSafe(val) {
+  const parsed = parseInt(val);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 /**
@@ -532,11 +599,6 @@ function updateMigrationModel() {
   const premiumSlider = document.getElementById('mig-premium-slider');
 
   if (!standardSlider || !premiumSlider || !migrationParams) {
-    console.warn('⚠️ updateMigrationModel early return:', {
-      standardSlider: !!standardSlider,
-      premiumSlider: !!premiumSlider,
-      migrationParams: !!migrationParams
-    });
     return;
   }
 
@@ -549,19 +611,6 @@ function updateMigrationModel() {
   const standardPriceChange = ((standardPrice - migrationParams.baselineAdLitePrice) / migrationParams.baselineAdLitePrice) * 100;
   const premiumPriceChange = ((premiumPrice - migrationParams.baselineAdFreePrice) / migrationParams.baselineAdFreePrice) * 100;
 
-  console.log('📊 Migration Model Update:', {
-    baselineStandardPrice: migrationParams.baselineAdLitePrice,
-    baselinePremiumPrice: migrationParams.baselineAdFreePrice,
-    standardPrice,
-    premiumPrice,
-    standardPriceChange: standardPriceChange.toFixed(2) + '%',
-    premiumPriceChange: premiumPriceChange.toFixed(2) + '%',
-    baselineGap: migrationParams.baselineGap,
-    newGap,
-    gapChange: gapChange.toFixed(2) + '%',
-    chartExists: !!migrationChartSimple
-  });
-
   // Update displays
   document.getElementById('mig-standard-display').textContent = '$' + Math.round(standardPrice);
   document.getElementById('mig-premium-display').textContent = '$' + Math.round(premiumPrice);
@@ -569,16 +618,18 @@ function updateMigrationModel() {
   document.getElementById('mig-gap-change').textContent = (gapChange >= 0 ? '+' : '') + gapChange.toFixed(1) + '%';
 
   // Get cohort-specific migration parameters
-  const selectedCohortValue = document.getElementById('mig-cohort-select')?.value || 'baseline';
+  // Use the monetization filter as the primary driver for "Sensitivity Profile"
+  const selectedCohortValue = document.getElementById('mig-segment-mon')?.value || 'all';
 
   // Map price sensitivity dropdown values to actual cohort names in cohort_coefficients.json
   const cohortMapping = {
-    'baseline': 'value_conscious',       // Moderate baseline (elasticity 7.5)
-    'budget': 'deal_hunter',              // Highly price-sensitive (elasticity 15.0, asymmetry 4.5)
-    'value': 'value_conscious',           // Want best value (elasticity 7.5, asymmetry 2.2)
-    'standard': 'content_driven',         // Moderate sensitivity (elasticity 2.4, asymmetry 2.0)
-    'premium': 'ultra_loyal',             // Less sensitive (elasticity 0.4, asymmetry 1.8)
-    'luxury': 'ultra_loyal'               // Price-insensitive (elasticity 0.4, asymmetry 1.8)
+    'all': 'value_conscious',             // Moderate baseline
+    'baseline': 'value_conscious',       // Moderate baseline
+    'budget': 'deal_hunter',              // Highly price-sensitive
+    'value': 'value_conscious',           // Want best value
+    'standard': 'content_driven',         // Moderate sensitivity
+    'premium': 'ultra_loyal',             // Less sensitive
+    'luxury': 'ultra_loyal'               // Price-insensitive
   };
 
   const actualCohortName = cohortMapping[selectedCohortValue] || 'value_conscious';

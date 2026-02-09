@@ -1032,7 +1032,7 @@ export function renderSegmentScatterPlot(containerId, tier) {
     }).filter(d => d.visitors > 0);
 
     // Set up dimensions with generous margins
-    const margin = { top: 70, right: 180, bottom: 100, left: 100 };
+    const margin = { top: 70, right: 220, bottom: 100, left: 100 };
     const width = 950 - margin.left - margin.right;
     const height = 650 - margin.top - margin.bottom;
 

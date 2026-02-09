@@ -21,9 +21,8 @@ marked.use({
   renderer: {
     code(code, lang) {
       const language = hljs.getLanguage(lang) ? lang : "plaintext";
-      return /* html */ `<pre class="hljs language-${language}"><code>${
-        hljs.highlight(code, { language }).value.trim()
-      }</code></pre>`;
+      return /* html */ `<pre class="hljs language-${language}"><code>${hljs.highlight(code, { language }).value.trim()
+        }</code></pre>`;
     },
   },
 });
@@ -192,36 +191,12 @@ export function initializeChat(context) {
     });
   }
 
-  // Check if LLM is already configured and enable chat UI
-  checkAndEnableChatUI();
-}
-
-/**
- * Check if LLM is configured and enable chat UI if so
- */
-async function checkAndEnableChatUI() {
-  try {
-    // Try to get existing config without showing modal
-    const config = await openaiConfig({
-      defaultBaseUrls: DEFAULT_BASE_URLS,
-      show: false  // Don't show modal, just check if config exists
-    });
-
-    // If we got a config with apiKey, enable the chat UI
-    if (config && config.apiKey) {
-      console.log('LLM already configured, enabling chat UI');
-      document.getElementById('chat-input').disabled = false;
-      document.getElementById('chat-send-btn').disabled = false;
-      document.querySelectorAll('.suggested-query').forEach(btn => {
-        btn.disabled = false;
-      });
-    } else {
-      console.log('LLM not configured yet, chat UI will remain disabled until configuration');
-    }
-  } catch (error) {
-    // Config doesn't exist yet, that's fine
-    console.log('LLM not configured yet:', error.message);
-  }
+  // Enable chat UI elements
+  document.getElementById('chat-input').disabled = false;
+  document.getElementById('chat-send-btn').disabled = false;
+  document.querySelectorAll('.suggested-query').forEach(btn => {
+    btn.disabled = false;
+  });
 }
 
 /**
@@ -243,12 +218,7 @@ export async function configureLLM() {
       defaultBaseUrls: DEFAULT_BASE_URLS
     });
 
-    // Enable chat UI after configuration
-    document.getElementById('chat-input').disabled = false;
-    document.getElementById('chat-send-btn').disabled = false;
-    document.querySelectorAll('.suggested-query').forEach(btn => {
-      btn.disabled = false;
-    });
+    // Chat UI is already enabled by default in initializeChat
 
     bootstrapAlert({
       color: "success",
@@ -284,12 +254,12 @@ function buildSystemPrompt() {
   // Format saved scenarios for the prompt
   const savedScenariosText = savedScenarios.length > 0
     ? savedScenarios.map(s => {
-        if (s.delta && s.delta.revenue_pct !== undefined) {
-          return `- ${s.scenario_id}: ${s.scenario_name} (Revenue ${s.delta.revenue_pct >= 0 ? '+' : ''}${s.delta.revenue_pct.toFixed(1)}%, Subscribers ${s.delta.visitors_pct >= 0 ? '+' : ''}${s.delta.visitors_pct.toFixed(1)}%)`;
-        } else {
-          return `- ${s.scenario_id}: ${s.scenario_name}`;
-        }
-      }).join('\n')
+      if (s.delta && s.delta.revenue_pct !== undefined) {
+        return `- ${s.scenario_id}: ${s.scenario_name} (Revenue ${s.delta.revenue_pct >= 0 ? '+' : ''}${s.delta.revenue_pct.toFixed(1)}%, Subscribers ${s.delta.visitors_pct >= 0 ? '+' : ''}${s.delta.visitors_pct.toFixed(1)}%)`;
+      } else {
+        return `- ${s.scenario_id}: ${s.scenario_name}`;
+      }
+    }).join('\n')
     : 'No scenarios saved for comparison yet';
 
   // Get segment data if available
@@ -355,6 +325,45 @@ You can also target by behavioral axes:
     }
   }
 
+  // Get interactive model state (from window objects)
+  let interactiveModelsState = '**Interactive Model State:**\nModels not initialized yet or data unavailable.';
+
+  try {
+    const acquisition = window.acquisitionModel?.getState();
+    const churn = window.churnModel?.getState();
+    const migration = window.migrationModel?.getState();
+
+    if (acquisition || churn || migration) {
+      interactiveModelsState = `**User's Current Interaction State (Steps 6-8):**
+      
+1. **Acquisition Model (Step 6):**
+   - Active Tier: ${acquisition?.currentTier || 'Standard Pass'}
+   - Current Price Input: $${acquisition?.currentPrice || 'N/A'}
+   - Segment Filters: 
+     - Frequency=${acquisition?.activeFilters?.acquisition || 'All'}
+     - Party=${acquisition?.activeFilters?.engagement || 'All'}
+     - Sensitivity=${acquisition?.activeFilters?.monetization || 'All'}
+   
+2. **Churn Model (Step 7):**
+   - Active Tier: ${churn?.currentTier || 'Standard Pass'}
+   - Price Increase: +$${churn?.currentPrice || '0'}
+   - Segment Filters:
+     - Frequency=${churn?.activeFilters?.acquisition || 'All'}
+     - Party=${churn?.activeFilters?.engagement || 'All'}
+     - Sensitivity=${churn?.activeFilters?.monetization || 'All'}
+   
+3. **Migration Model (Step 8):**
+   - Standard Pass Price: $${migration?.prices?.standard || 'N/A'}
+   - Premium Pass Price: $${migration?.prices?.premium || 'N/A'}
+   - Segment Filters:
+     - Frequency=${migration?.activeFilters?.acquisition || 'All'}
+     - Party=${migration?.activeFilters?.engagement || 'All'}
+     - Sensitivity=${migration?.activeFilters?.monetization || 'All'}`;
+    }
+  } catch (e) {
+    console.error('Error getting interactive model state:', e);
+  }
+
   // Replace placeholders with actual values
   const prompt = promptTemplate
     .replace('{currentVisitors}', businessContext.currentVisitors?.toLocaleString() || 'N/A')
@@ -367,7 +376,7 @@ You can also target by behavioral axes:
     .replace('{currentSimulation}', currentSim && currentSim.delta ? `Active: "${currentSim.scenario_name}" - Revenue ${currentSim.delta.revenue_pct >= 0 ? '+' : ''}${currentSim.delta.revenue_pct.toFixed(1)}%, Subscribers ${currentSim.delta.visitors_pct >= 0 ? '+' : ''}${currentSim.delta.visitors_pct.toFixed(1)}%` : currentSim ? `Active: "${currentSim.scenario_name}"` : 'No scenario simulated yet')
     .replace('{savedScenarios}', savedScenariosText)
     .replace('{segmentSummary}', segmentSummary)
-    .replace('{availableSegments}', availableSegments);
+    .replace('{availableSegments}', availableSegments + '\n\n' + interactiveModelsState);
 
   return prompt;
 }

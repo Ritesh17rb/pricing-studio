@@ -100,6 +100,20 @@ async function loadAcquisitionParams() {
       console.log(`✓ Loaded ${cohorts.length} acquisition cohorts for ${tier}:`, cohorts);
     }
 
+    // Expose state for AI Chat
+    window.acquisitionModel = {
+      getState: () => ({
+        params: acquisitionParams,
+        activeFilters: {
+          acquisition: document.getElementById('acq-segment-acq')?.value || 'all',
+          engagement: document.getElementById('acq-segment-eng')?.value || 'all',
+          monetization: document.getElementById('acq-segment-mon')?.value || 'all'
+        },
+        currentTier: document.getElementById('acq-tier-select')?.value,
+        currentPrice: document.getElementById('acq-price-slider')?.value
+      })
+    };
+
     console.log('✓ Acquisition parameters loaded from actual visitor data:', acquisitionParams);
     return acquisitionParams;
   } catch (error) {
@@ -271,12 +285,12 @@ function createAcquisitionChartSimple() {
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               if (context.datasetIndex === 2) {
                 // Revenue Impact dataset (LTV)
                 const value = context.parsed.y;
                 const sign = value >= 0 ? '+' : '';
-                return context.dataset.label + ': ' + sign + '$' + value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' LTV';
+                return context.dataset.label + ': ' + sign + '$' + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' LTV';
               } else {
                 // Subscriber datasets
                 let label = context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' new subs';
@@ -318,9 +332,9 @@ function createAcquisitionChartSimple() {
           },
           ticks: {
             color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#e5e5e5' : '#212529',
-            callback: function(value) {
+            callback: function (value) {
               const sign = value >= 0 ? '+' : '';
-              return sign + '$' + value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+              return sign + '$' + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             }
           },
           title: {
@@ -353,7 +367,11 @@ function setupAcquisitionInteractivity() {
   const tierSelect = document.getElementById('acq-tier-select');
   const priceSlider = document.getElementById('acq-price-slider');
   const ciToggle = document.getElementById('acq-show-ci');
-  const cohortSelect = document.getElementById('acq-cohort-select');
+
+  // New Filter Dropdowns
+  const segFreq = document.getElementById('acq-segment-acq');
+  const segParty = document.getElementById('acq-segment-eng');
+  const segSens = document.getElementById('acq-segment-mon');
 
   if (!tierSelect || !priceSlider) {
     console.warn('Acquisition controls not found');
@@ -362,28 +380,7 @@ function setupAcquisitionInteractivity() {
 
   // Tier selection change
   tierSelect.addEventListener('change', () => {
-    const tier = tierSelect.value;
-    const params = acquisitionParams[tier];
-
-    if (params) {
-      // Update price slider range dynamically based on tier's current price
-      priceSlider.min = Math.round(params.price * 0.6);  // 40% discount
-      priceSlider.max = Math.round(params.price * 1.6);  // 60% increase
-      priceSlider.value = params.price;
-      priceSlider.step = 5;
-
-      // Update slider labels
-      const sliderLabels = priceSlider.parentElement.querySelectorAll('.small.text-muted span');
-      if (sliderLabels.length === 2) {
-        sliderLabels[0].textContent = '$' + priceSlider.min;
-        sliderLabels[1].textContent = '$' + priceSlider.max;
-      }
-
-      // Update tier selector labels with actual prices
-      updateTierLabels();
-    }
-
-    updateAcquisitionModel();
+    refreshAcquisitionCohorts();
   });
 
   // Price slider input
@@ -397,30 +394,83 @@ function setupAcquisitionInteractivity() {
     });
   }
 
-  // Cohort selection change - filters chart to show only selected cohort
-  if (cohortSelect) {
-    cohortSelect.addEventListener('change', () => {
-      const selectedCohort = cohortSelect.value;
-      console.log('🔄 Filtering to acquisition cohort:', selectedCohort);
-      updateAcquisitionModel();
-    });
-  }
+  // Segment Filter Changes
+  const onFilterChange = () => {
+    console.log('🔄 Segment filter changed, refreshing data...');
+    refreshAcquisitionCohorts();
+  };
+
+  if (segFreq) segFreq.addEventListener('change', onFilterChange);
+  if (segParty) segParty.addEventListener('change', onFilterChange);
+  if (segSens) segSens.addEventListener('change', onFilterChange);
 
   // Initialize tier labels and price slider on first load
   updateTierLabels();
-  const initialTier = tierSelect.value;
-  if (acquisitionParams[initialTier]) {
-    const params = acquisitionParams[initialTier];
-    priceSlider.min = Math.round(params.price * 0.6);
-    priceSlider.max = Math.round(params.price * 1.6);
-    priceSlider.value = params.price;
+  refreshAcquisitionCohorts();
+}
 
-    // Update slider labels
-    const sliderLabels = priceSlider.parentElement.querySelectorAll('.small.text-muted span');
-    if (sliderLabels.length === 2) {
-      sliderLabels[0].textContent = '$' + priceSlider.min;
-      sliderLabels[1].textContent = '$' + priceSlider.max;
+/**
+ * Refresh cohort data based on current filters
+ */
+async function refreshAcquisitionCohorts() {
+  const tierSelect = document.getElementById('acq-tier-select');
+  const priceSlider = document.getElementById('acq-price-slider');
+
+  if (!tierSelect || !acquisitionParams) return;
+
+  const tier = tierSelect.value;
+
+  // Get current filters
+  const filters = {
+    acquisition: document.getElementById('acq-segment-acq')?.value || 'all',
+    engagement: document.getElementById('acq-segment-eng')?.value || 'all',
+    monetization: document.getElementById('acq-segment-mon')?.value || 'all'
+  };
+
+  try {
+    // Get cohorts filtered by the selected criteria
+    const cohorts = await getAcquisitionCohorts(tier, filters);
+
+    // Update the params for this tier with the new filtered cohorts
+    if (acquisitionParams[tier]) {
+      acquisitionParams[tier].cohorts = cohorts;
+
+      // Recalculate base elasticity for this filtered view
+      const totalVisitors = cohorts.reduce((sum, c) => sum + c.size, 0);
+
+      let weightedElasticity = -2.0; // Fallback
+      if (totalVisitors > 0) {
+        weightedElasticity = cohorts.reduce((sum, c) => {
+          return sum + (c.elasticity * c.size / totalVisitors);
+        }, 0);
+      } else {
+        // If filter returns no results, use default
+        weightedElasticity = -2.0;
+      }
+
+      acquisitionParams[tier].base_elasticity = weightedElasticity;
+
+      // Update slider range based on tier price
+      const params = acquisitionParams[tier];
+      if (priceSlider && document.activeElement !== priceSlider) { // Don't reset if user is dragging
+        priceSlider.min = Math.round(params.price * 0.6);
+        priceSlider.max = Math.round(params.price * 1.6);
+        priceSlider.value = params.price;
+
+        // Update slider labels
+        const sliderLabels = priceSlider.parentElement.querySelectorAll('.small.text-muted span');
+        if (sliderLabels.length === 2) {
+          sliderLabels[0].textContent = '$' + priceSlider.min;
+          sliderLabels[1].textContent = '$' + priceSlider.max;
+        }
+      }
     }
+
+    updateAcquisitionModel();
+    updateTierLabels();
+
+  } catch (error) {
+    console.error('Failed to refresh cohorts:', error);
   }
 }
 

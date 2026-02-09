@@ -7,16 +7,13 @@
  * Aggregate segments into acquisition cohorts
  * Groups by acquisition_segment (5 cohorts)
  */
-export async function getAcquisitionCohorts(tier) {
+export async function getAcquisitionCohorts(tier, filters = {}) {
   try {
-    console.log(`[Cohort Aggregator] Loading data for tier: ${tier}`);
+    console.log(`[Cohort Aggregator] Loading data for tier: ${tier} with filters:`, filters);
 
     // Load segment data
     const segmentKPIs = await loadSegmentKPIs();
-    console.log(`[Cohort Aggregator] Loaded ${segmentKPIs.length} segment KPIs`);
-
     const segmentElasticity = await loadSegmentElasticity();
-    console.log(`[Cohort Aggregator] Loaded segment elasticity data:`, Object.keys(segmentElasticity));
 
     // Define acquisition segment types (visit frequency)
     const acquisitionSegments = [
@@ -34,7 +31,16 @@ export async function getAcquisitionCohorts(tier) {
       const cohortSegments = segmentKPIs.filter(s => {
         const compositeKey = s.composite_key;
         const [acq, eng, mon] = compositeKey.split('|');
-        return acq === segmentType && s.tier === tier;
+
+        // Base criteria
+        if (acq !== segmentType) return false;
+        if (s.tier !== tier) return false;
+
+        // Apply additional filters
+        if (filters.engagement && filters.engagement !== 'all' && eng !== filters.engagement) return false;
+        if (filters.monetization && filters.monetization !== 'all' && mon !== filters.monetization) return false;
+
+        return true;
       });
 
       if (cohortSegments.length === 0) continue;
@@ -77,8 +83,7 @@ export async function getAcquisitionCohorts(tier) {
     return cohorts;
   } catch (error) {
     console.error('[Cohort Aggregator] Error aggregating acquisition cohorts:', error);
-    console.error('[Cohort Aggregator] Error stack:', error.stack);
-    throw error; // Re-throw to propagate error
+    throw error;
   }
 }
 
@@ -86,7 +91,7 @@ export async function getAcquisitionCohorts(tier) {
  * Aggregate segments into churn cohorts
  * Groups by engagement_segment (5 cohorts)
  */
-export async function getChurnCohorts(tier) {
+export async function getChurnCohorts(tier, filters = {}) {
   try {
     const segmentKPIs = await loadSegmentKPIs();
     const segmentElasticity = await loadSegmentElasticity();
@@ -105,7 +110,16 @@ export async function getChurnCohorts(tier) {
       const cohortSegments = segmentKPIs.filter(s => {
         const compositeKey = s.composite_key;
         const [acq, eng, mon] = compositeKey.split('|');
-        return eng === segmentType && s.tier === tier;
+
+        // Base criteria
+        if (eng !== segmentType) return false;
+        if (s.tier !== tier) return false;
+
+        // Apply additional filters
+        if (filters.acquisition && filters.acquisition !== 'all' && acq !== filters.acquisition) return false;
+        if (filters.monetization && filters.monetization !== 'all' && mon !== filters.monetization) return false;
+
+        return true;
       });
 
       if (cohortSegments.length === 0) continue;
@@ -125,7 +139,23 @@ export async function getChurnCohorts(tier) {
 
       const avgElasticity = elasticityCount > 0 ? elasticitySum / elasticityCount : 0.5;
 
-      console.log(`[Churn Cohort] ${segmentType}: size=${size}, elasticity=${avgElasticity.toFixed(3)} (from ${elasticityCount} segments)`);
+      // Calculate weighted average churn rate from segment KPIs
+      let churnSum = 0;
+      let churnWeight = 0;
+
+      for (const segment of cohortSegments) {
+        // Only include if data is valid
+        if (segment.avg_return_rate !== undefined && segment.visitor_count) {
+          // Churn rate = 1 - return rate
+          const churn = 1.0 - parseFloat(segment.avg_return_rate);
+          const visitors = parseInt(segment.visitor_count);
+          churnSum += (churn * visitors);
+          churnWeight += visitors;
+        }
+      }
+
+      // Default to 25% if no data
+      const avgChurn = churnWeight > 0 ? (churnSum / churnWeight) * 100 : 25;
 
       const nameMap = {
         'solo': 'Solo Visitors',
@@ -136,9 +166,11 @@ export async function getChurnCohorts(tier) {
       };
 
       cohorts.push({
+        id: segmentType,
         name: nameMap[segmentType] || segmentType,
         size: size,
-        elasticity: avgElasticity
+        elasticity: avgElasticity,
+        churn_rate: avgChurn
       });
     }
 
